@@ -1,0 +1,13 @@
+AI Productivity and AI API Integration for Developers
+Final Project
+
+Buatlah sebuah chatbot berbasis AI dengan use case dan konfigurasi parameter yang sesuai dengan kreativitas
+masing-masing. Chatbot harus menggunakan model AI (misalnya NLP/LLM) untuk memproses bahasa alami dan
+memberikan respon yang relevan kepada pengguna.
+● Contoh Use Case: customer service bot, education bot, travel assistant, personal productivity assistant, dll.
+● Contoh Parameter Kreatif: gaya bahasa (formal/santai), domain pengetahuan tertentu (misalnya kesehatan,
+edukasi, hobi), integrasi API eksternal, atau fitur tambahan seperti memory dan rekomendasi.
+
+Deliverables:
+● URL repositori GitHub
+● Screenshoots User Interface
