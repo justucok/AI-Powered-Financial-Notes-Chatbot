@@ -122,10 +122,11 @@ async def handle_image_message(
     db: AsyncSession,
     image_bytes: bytes,
     mime_type: str,
+    message: str = "",
 ) -> dict[str, Any]:
     """Process an image message and persist a transaction when extraction succeeds."""
 
-    result = await gemini_service.process_image(image_bytes, mime_type)
+    result = await gemini_service.process_image(image_bytes, mime_type, message)
 
     if result.get("is_transaction"):
         try:

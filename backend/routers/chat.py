@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,6 +31,7 @@ async def post_chat(
 @router.post("/chat/image")
 async def post_chat_image(
     file: UploadFile = File(...),
+    message: Annotated[str, Form()] = "",
     db: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
     """Handle image chat requests."""
@@ -40,5 +43,5 @@ async def post_chat_image(
         )
 
     image_bytes = await file.read()
-    result = await chat_service.handle_image_message(db, image_bytes, file.content_type)
+    result = await chat_service.handle_image_message(db, image_bytes, file.content_type, message)
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)
