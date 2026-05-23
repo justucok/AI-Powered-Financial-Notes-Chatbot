@@ -189,12 +189,25 @@ async def process_chat(message: str, history: list[dict[str, Any]]) -> dict[str,
     return ERROR_FALLBACK.copy()
 
 
-async def process_image(image_bytes: bytes, mime_type: str) -> dict[str, Any]:
+async def process_image(
+    image_bytes: bytes,
+    mime_type: str,
+    message: str = "",
+) -> dict[str, Any]:
     """Process a receipt image with Gemini and return structured JSON output."""
 
     generation_config = _get_generation_config(IMAGE_RESPONSE_SCHEMA)
+    trimmed_message = message.strip()
+    prompt = IMAGE_EXTRACTION_PROMPT
+
+    if trimmed_message:
+        prompt = (
+            f"{IMAGE_EXTRACTION_PROMPT}\n\n"
+            f"Konteks tambahan dari pengguna:\n{trimmed_message}"
+        )
+
     contents: list[Any] = [
-        IMAGE_EXTRACTION_PROMPT,
+        prompt,
         types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
     ]
 

@@ -1,25 +1,60 @@
 <script setup>
+import { onMounted } from 'vue'
+
+import ChatBox from './components/ChatBox.vue'
+import QuickAdd from './components/QuickAdd.vue'
 import SummaryCards from './components/SummaryCards.vue'
+import TransactionHistory from './components/TransactionHistory.vue'
+import { useTransactions } from './composables/useTransactions'
+
+const {
+  transactions,
+  summary,
+  loading,
+  selectedMonth,
+  fetchAll,
+  createTransaction,
+  deleteTransaction,
+  setMonth,
+} = useTransactions()
+
+onMounted(fetchAll)
 </script>
 
 <template>
-  <main class="min-h-screen px-4 py-8 sm:px-6 lg:px-10">
-    <section class="mx-auto max-w-6xl">
-      <div class="mb-8 rounded-[2rem] border border-white/70 bg-white/70 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-sky-600">
-          AI Financial Notes
-        </p>
-        <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-          Dashboard ringkas untuk memantau saldo, pemasukan, dan pengeluaran.
+  <main class="min-h-screen bg-gray-50">
+    <header class="w-full bg-white shadow-sm">
+      <div class="mx-auto max-w-4xl px-4 py-5">
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
+          💼 AI-Powered Financial Notes Chatbot
         </h1>
-        <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-          Frontend Vue 3 + Vite ini disusun dengan separation of concerns yang ketat:
-          komponen presentational tetap bersih, logic API berada di service layer, dan utilitas
-          formatter dipisahkan agar mudah dirawat.
+        <p class="mt-1 text-sm text-slate-600">
+          Asisten keuangan pribadi untuk mencatat transaksi dan memantau ringkasan bulanan.
         </p>
       </div>
+    </header>
 
-      <SummaryCards :balance="4750000" :income="7200000" :expense="2450000" />
-    </section>
+    <div class="mx-auto max-w-4xl space-y-6 px-4 py-6">
+      <SummaryCards
+        :balance="summary.balance"
+        :income="summary.income"
+        :expense="summary.expense"
+      />
+
+      <ChatBox @transaction-added="fetchAll" />
+
+      <QuickAdd
+        :create-transaction="createTransaction"
+        @transaction-added="fetchAll"
+      />
+
+      <TransactionHistory
+        :transactions="transactions"
+        :loading="loading"
+        :selected-month="selectedMonth"
+        @month-changed="setMonth"
+        @delete-transaction="deleteTransaction"
+      />
+    </div>
   </main>
 </template>

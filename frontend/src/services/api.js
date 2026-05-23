@@ -44,9 +44,10 @@ export async function sendChat(message, history) {
   return response.data
 }
 
-export async function sendChatImage(file) {
+export async function sendChatImage(file, message = '') {
   const formData = new FormData()
   formData.append('file', file)
+  formData.append('message', message)
 
   const response = await apiClient.post('/v1/chat/image', formData, {
     headers: {

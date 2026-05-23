@@ -39,6 +39,8 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title=settings.app_name,
+        description="Backend API for the AI-Powered Financial Notes Chatbot.",
+        version="1.0.0",
         lifespan=lifespan,
     )
     app.include_router(chat_router, prefix=settings.api_v1_prefix)

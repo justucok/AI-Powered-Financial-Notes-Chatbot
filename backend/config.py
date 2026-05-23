@@ -16,6 +16,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("API_V1_PREFIX"),
     )
     database_url: str = Field(
+        default="sqlite+aiosqlite:///./financial_notes.db",
         validation_alias=AliasChoices("DATABASE_URL"),
     )
     gemini_api_key: str = Field(
