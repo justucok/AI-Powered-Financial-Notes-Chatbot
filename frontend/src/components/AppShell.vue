@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import ChatBubble from './ChatBubble.vue'
 
 defineProps({
   currentPage: {
@@ -25,6 +26,7 @@ const showMobileProfile = ref(false)
 const emit = defineEmits({
   navigate: (page) => typeof page === 'string',
   logout: () => true,
+  'transaction-added': () => true,
 })
 
 const navItems = [
@@ -63,13 +65,7 @@ const navItems = [
         >
           <span class="text-lg">🏠</span> Dashboard
         </button>
-        <button
-          type="button"
-          :class="['flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold transition duration-200', currentPage === 'statistics' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'hover:bg-slate-800 hover:text-white']"
-          @click="emit('navigate', 'statistics')"
-        >
-          <span class="text-lg">📊</span> Statistics
-        </button>
+
         <button
           type="button"
           :class="['flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold transition duration-200', currentPage === 'add' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'hover:bg-slate-800 hover:text-white']"
@@ -152,7 +148,7 @@ const navItems = [
     </header>
 
     <!-- Main Content -->
-    <div class="mx-auto max-w-4xl">
+    <div class="mx-auto max-w-[1400px]">
       <slot />
     </div>
 
@@ -209,5 +205,8 @@ const navItems = [
         <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide">History</span>
       </button>
     </nav>
+
+    <!-- Global Chat Bubble (Desktop Only) -->
+    <ChatBubble class="hidden lg:block" @transaction-added="emit('transaction-added')" />
   </div>
 </template>

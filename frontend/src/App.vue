@@ -16,12 +16,6 @@ import BudgetPage from './views/BudgetPage.vue'
 const { isLoggedIn, fullName, nickname, logout } = useAuth()
 const currentPage = ref('dashboard')
 const selectedStatType = ref('expense')
-
-function handleNavigateStats(type) {
-  selectedStatType.value = type
-  currentPage.value = 'statistics'
-}
-
 const {
   transactions,
   summary,
@@ -65,6 +59,7 @@ function handleLogout() {
     :balance="summary.balance"
     @navigate="currentPage = $event"
     @logout="handleLogout"
+    @transaction-added="fetchAll"
   >
     <!-- View Switcher -->
     <DashboardPage
@@ -74,7 +69,6 @@ function handleLogout() {
       :expense="summary.expense"
       :nickname="nickname || ''"
       @refresh="fetchAll"
-      @navigate-stats="handleNavigateStats"
     />
 
     <AddTransactionPage
@@ -96,7 +90,8 @@ function handleLogout() {
       v-else-if="currentPage === 'statistics'"
       :initial-type="selectedStatType"
     />
-    
+
+
     <SettingsPage
       v-else-if="currentPage === 'settings'"
     />

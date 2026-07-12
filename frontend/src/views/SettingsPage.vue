@@ -287,7 +287,7 @@ async function handleAddCategory() {
               <hr class="border-gray-100 my-8">
 
               <!-- Ubah Password -->
-              <div class="space-y-4 max-w-md">
+              <div class="space-y-4 w-full">
                 <h3 class="text-lg font-bold text-gray-900">Ubah Password</h3>
                 <form @submit.prevent="handlePasswordSubmit" class="space-y-4">
                   <div>
@@ -397,7 +397,7 @@ async function handleAddCategory() {
                   <div class="flex items-center space-x-4">
                     <div class="text-right">
                       <p class="text-xs text-gray-500">Saldo</p>
-                      <p class="font-bold text-blue-600">Rp {{ formatRupiah(source.balance) }}</p>
+                      <p class="font-bold text-blue-600">{{ formatRupiah(source.balance) }}</p>
                     </div>
                     <button @click="removeSource(source.id)" 
                             class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -563,7 +563,7 @@ async function handleAddCategory() {
                     <div>
                       <p class="font-bold text-slate-800">{{ cat.name }}</p>
                       <p class="text-xs text-slate-500">
-                        Anggaran Saat Ini: Rp {{ formatRupiah(getCategoryBudgetAmount(cat.name)) }}
+                        Anggaran Saat Ini: {{ formatRupiah(getCategoryBudgetAmount(cat.name)) }}
                       </p>
                     </div>
                   </div>

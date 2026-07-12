@@ -107,7 +107,7 @@ async def seed_data():
                     amount=10000000,
                     category="Gaji",
                     description="Gaji Bulanan",
-                    date=base_date.replace(day=1).strftime("%Y-%m-%d"),
+                    date=base_date.replace(day=1).date(),
                     fund_source_id=fs_id
                 ))
                 
@@ -133,7 +133,7 @@ async def seed_data():
                         amount=amt,
                         category=cat,
                         description=f"Pengeluaran {cat}",
-                        date=tx_date.strftime("%Y-%m-%d"),
+                        date=tx_date.date(),
                         fund_source_id=fs_id
                     ))
                     
@@ -150,8 +150,7 @@ async def seed_data():
             print("Seeding dummy budgets...")
             
             # Current Month budget
-            cur_month = today.strftime("%Y-%m")
-            b_current = Budget(month=cur_month, amount=8000000)
+            b_current = Budget(month="ALL", amount=8000000)
             session.add(b_current)
             await session.flush()
             
@@ -159,17 +158,6 @@ async def seed_data():
             session.add(CategoryBudget(budget_id=b_current.id, category_name="Transport", amount=800000))
             session.add(CategoryBudget(budget_id=b_current.id, category_name="Belanja", amount=3000000))
             session.add(CategoryBudget(budget_id=b_current.id, category_name="Tagihan", amount=1500000))
-
-            # Previous Month budget
-            prev_date = today - timedelta(days=30)
-            prev_month = prev_date.strftime("%Y-%m")
-            b_prev = Budget(month=prev_month, amount=6000000)
-            session.add(b_prev)
-            await session.flush()
-            
-            session.add(CategoryBudget(budget_id=b_prev.id, category_name="Makanan", amount=1500000))
-            session.add(CategoryBudget(budget_id=b_prev.id, category_name="Transport", amount=500000))
-            session.add(CategoryBudget(budget_id=b_prev.id, category_name="Belanja", amount=2000000))
             
             await session.commit()
             print("Successfully seeded dummy budgets!")

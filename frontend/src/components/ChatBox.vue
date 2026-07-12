@@ -76,7 +76,7 @@ function handleClearImage() {
 
 <template>
   <section class="rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:p-6">
-    <div class="mb-4 flex items-center justify-between">
+    <div class="mb-4 flex items-center justify-between shrink-0">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-600">
           AI Chat Assistant
@@ -89,7 +89,7 @@ function handleClearImage() {
 
     <div
       ref="messagesContainerRef"
-      class="h-[26rem] space-y-4 overflow-y-auto rounded-[1.5rem] bg-slate-50/80 p-4"
+      class="flex-1 min-h-[26rem] space-y-4 overflow-y-auto rounded-[1.5rem] bg-slate-50/80 p-4"
     >
       <article
         v-for="(message, index) in messages"
@@ -173,7 +173,7 @@ function handleClearImage() {
       </button>
     </div>
 
-    <form class="mt-4 flex items-end gap-3" @submit.prevent="handleSubmit">
+    <form class="mt-4 flex items-end gap-3 shrink-0" @submit.prevent="handleSubmit">
       <input
         ref="fileInputRef"
         type="file"
