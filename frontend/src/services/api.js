@@ -51,6 +51,11 @@ export async function createTransaction(data) {
   return response.data
 }
 
+export async function updateTransaction(id, data) {
+  const response = await apiClient.put(`/v1/transactions/${id}`, data)
+  return response.data
+}
+
 export async function deleteTransaction(id) {
   const response = await apiClient.delete(`/v1/transactions/${id}`)
   return response.data

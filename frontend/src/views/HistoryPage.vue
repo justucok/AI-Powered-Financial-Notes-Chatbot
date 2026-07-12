@@ -3,6 +3,8 @@ import { computed, ref, onMounted } from 'vue'
 
 import { formatDate, formatMonth, formatRupiah } from '../utils/formatters'
 import { useFundSources } from '../composables/useFundSources'
+import EditTransactionModal from '../components/EditTransactionModal.vue'
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal.vue'
 
 const props = defineProps({
   transactions: {
@@ -22,6 +24,7 @@ const props = defineProps({
 const emit = defineEmits({
   'month-changed': (month) => typeof month === 'string',
   'delete-transaction': (id) => Number.isInteger(id),
+  'edit-transaction': (payload) => payload && typeof payload === 'object',
 })
 
 const { sources: fundSources, fetchSources } = useFundSources()
@@ -80,10 +83,40 @@ function handleMonthSelect(month) {
   emit('month-changed', month)
 }
 
-function handleDelete(id) {
-  if (window.confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
-    emit('delete-transaction', id)
+const showDeleteModal = ref(false)
+const transactionToDeleteId = ref(null)
+
+const showEditModal = ref(false)
+const transactionToEdit = ref(null)
+
+function confirmDelete(id) {
+  transactionToDeleteId.value = id
+  showDeleteModal.value = true
+}
+
+function executeDelete() {
+  if (transactionToDeleteId.value !== null) {
+    emit('delete-transaction', transactionToDeleteId.value)
+    showDeleteModal.value = false
+    transactionToDeleteId.value = null
   }
+}
+
+function openEdit(tx) {
+  transactionToEdit.value = { ...tx }
+  showEditModal.value = true
+}
+
+function executeEdit(updatedData) {
+  emit('edit-transaction', updatedData)
+  showEditModal.value = false
+  transactionToEdit.value = null
+}
+
+function getFundSourceDisplay(id) {
+  if (!id) return '-'
+  const source = fundSources.value.find(s => s.id === id)
+  return source ? `${source.icon || '💰'} ${source.name}` : '-'
 }
 </script>
 
@@ -194,7 +227,12 @@ function handleDelete(id) {
               <span class="text-xs font-semibold text-slate-500">{{ tx.category }}</span>
             </div>
             <p class="truncate text-sm font-bold text-slate-800">{{ tx.description || '-' }}</p>
-            <p class="text-[10px] text-slate-400">{{ formatDate(tx.date) }}</p>
+            <div class="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1">
+              <span>{{ formatDate(tx.date) }}</span>
+              <span v-if="tx.fund_source_id" class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                {{ getFundSourceDisplay(tx.fund_source_id) }}
+              </span>
+            </div>
           </div>
 
           <div class="text-right flex flex-col items-end gap-1.5 shrink-0 pl-4">
@@ -204,13 +242,22 @@ function handleDelete(id) {
             >
               {{ tx.type === 'income' ? '+' : '-' }}{{ formatRupiah(tx.amount) }}
             </p>
-            <button
-              type="button"
-              class="text-xs font-semibold text-rose-500 active:text-rose-700"
-              @click="handleDelete(tx.id)"
-            >
-              Hapus
-            </button>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="text-xs font-semibold text-sky-600 active:text-sky-800"
+                @click="openEdit(tx)"
+              >
+                Ubah
+              </button>
+              <button
+                type="button"
+                class="text-xs font-semibold text-rose-500 active:text-rose-700"
+                @click="confirmDelete(tx.id)"
+              >
+                Hapus
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -223,6 +270,7 @@ function handleDelete(id) {
               <th class="px-6 py-3.5">Tanggal</th>
               <th class="px-6 py-3.5">Kategori</th>
               <th class="px-6 py-3.5">Deskripsi</th>
+              <th class="px-6 py-3.5">Sumber Uang</th>
               <th class="px-6 py-3.5">Jumlah</th>
               <th class="px-6 py-3.5 text-right">Aksi</th>
             </tr>
@@ -236,26 +284,55 @@ function handleDelete(id) {
                 </span>
               </td>
               <td class="px-6 py-4 truncate max-w-[200px]">{{ tx.description || '-' }}</td>
+              <td class="whitespace-nowrap px-6 py-4 text-xs text-slate-600">
+                {{ getFundSourceDisplay(tx.fund_source_id) }}
+              </td>
               <td
                 class="whitespace-nowrap px-6 py-4 font-semibold"
                 :class="tx.type === 'income' ? 'text-green-600' : 'text-red-600'"
               >
                 {{ tx.type === 'income' ? '+' : '-' }}{{ formatRupiah(tx.amount) }}
               </td>
-              <td class="whitespace-nowrap px-6 py-4 text-right">
-                <button
-                  type="button"
-                  class="text-xs font-bold text-rose-600 hover:text-rose-500"
-                  @click="handleDelete(tx.id)"
-                >
-                  Hapus
-                </button>
+              <td class="whitespace-nowrap px-6 py-4">
+                <div class="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    class="text-xs font-bold text-sky-600 hover:text-sky-500"
+                    @click="openEdit(tx)"
+                  >
+                    Ubah
+                  </button>
+                  <button
+                    type="button"
+                    class="text-xs font-bold text-rose-600 hover:text-rose-500"
+                    @click="confirmDelete(tx.id)"
+                  >
+                    Hapus
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <!-- Modals -->
+    <EditTransactionModal
+      :show="showEditModal"
+      :transaction="transactionToEdit"
+      :fund-sources="fundSources"
+      :is-loading="loading"
+      @close="showEditModal = false"
+      @confirm="executeEdit"
+    />
+
+    <DeleteConfirmationModal
+      :show="showDeleteModal"
+      :is-loading="loading"
+      @close="showDeleteModal = false"
+      @confirm="executeDelete"
+    />
   </div>
 </template>
 
