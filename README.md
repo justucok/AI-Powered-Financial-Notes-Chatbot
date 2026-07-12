@@ -80,30 +80,67 @@ Semua endpoint backend memakai prefix:
 
 ## Cara Penggunaan Chatbot
 
-Contoh kalimat yang bisa digunakan:
+Anda dapat berinteraksi dengan **AI Chat Assistant** melalui kotak obrolan di *Dashboard* (versi *mobile*) atau menggunakan **Global Chat Bubble** yang mengambang di pojok kanan bawah (khusus versi *desktop*).
 
-### Mencatat pengeluaran
+Berikut adalah contoh kalimat yang bisa digunakan:
 
-- `Saya beli makan siang 25000 hari ini`
-- `Bayar ojek online 18000`
-- `Belanja bulanan 450000 kemarin`
+### Mencatat Pengeluaran
 
-### Mencatat pemasukan
+Anda dapat menyebutkan nominal, barang, dan juga **sumber uang** yang digunakan.
+- `Saya beli makan siang 25000 hari ini pakai BCA`
+- `Bayar ojek online 18000 dari Gopay`
+- `Belanja bulanan 450000 kemarin pakai Uang Tunai`
 
-- `Gaji masuk 8000000 tanggal 1`
+### Mencatat Pemasukan
+
+- `Gaji masuk 8000000 tanggal 1 ke Bank Mandiri`
 - `Dapat freelance 1500000 hari ini`
-- `Saya menerima bonus 500000`
+- `Saya menerima bonus 500000 masuk ke Dana`
 
-### Menanyakan ringkasan
+### Mengatur Anggaran (Budget)
+
+Anda bisa langsung mengatur budget bulanan melalui chat!
+- `Tolong set budget bulan ini sebesar 5000000`
+- `Atur budget untuk bulan depan (Agustus 2026) jadi 6000000`
+- `Set budget kategori Makanan sebesar 1500000 untuk bulan ini`
+
+### Menambahkan Sumber Uang
+
+- `Tambahkan sumber uang baru Bank Mandiri dengan saldo awal 2000000`
+- `Buat sumber uang E-Wallet OVO saldonya 500000`
+
+### Menanyakan Ringkasan & Sisa Budget
 
 - `Berapa total pengeluaran bulan ini?`
 - `Tampilkan ringkasan keuangan Mei 2026`
-- `Berapa saldo saya bulan ini?`
+- `Berapa sisa budget saya bulan ini?`
 
-### Upload nota
+### Mengunggah Nota / Struk (Image Vision)
 
-- Unggah foto struk makan, parkir, transportasi, atau belanja
-- Chatbot akan mencoba mengekstrak `type`, `amount`, `category`, `description`, dan `date`
+- Klik ikon klip (📎) untuk mengunggah foto struk makan, parkir, atau belanja Anda.
+- Chatbot akan otomatis menganalisa gambar tersebut dan mengekstrak *nominal*, *kategori*, dan *tanggal*, lalu mencatatnya untuk Anda!
+
+## Fitur Aplikasi (Features)
+
+Aplikasi ini memiliki berbagai fitur unggulan untuk membantu mencatat dan mengelola keuangan Anda:
+
+1. **AI Chat Assistant (Text)**: Anda bisa mencatat transaksi atau menanyakan ringkasan keuangan hanya dengan mengobrol secara natural. AI akan mengekstrak nominal, tipe (pemasukan/pengeluaran), kategori, dan tanggal secara otomatis.
+2. **Ekstraksi Nota (Image Vision)**: Cukup unggah foto struk/nota belanja, AI akan secara otomatis mengenali dan mencatat rincian transaksi tersebut.
+3. **Pencatatan Manual**: Fitur *Quick Add* untuk menambah transaksi secara manual dengan *form* yang mudah digunakan.
+4. **Riwayat Transaksi**: Tabel riwayat transaksi dengan fitur filter per bulan.
+5. **Sumber Uang (Fund Sources)**: Kelola berbagai sumber dana (Bank, E-Wallet, Tunai) beserta saldo real-time yang terhubung ke setiap transaksi.
+6. **Kategori Dinamis**: Tambah, ubah, dan hapus kategori pemasukan maupun pengeluaran.
+7. **Pengaturan Anggaran (Budgeting)**: Atur batas anggaran bulanan secara global atau rinci per-kategori pengeluaran. Anda akan mendapat peringatan (OVER BUDGET) jika pengeluaran melewati batas.
+8. **Statistik Interaktif**: Lacak tren pengeluaran, perbandingan pemasukan dan pengeluaran dalam bentuk visual chart.
+9. **Desain Responsif**: Antarmuka yang bersih dan ramah pengguna di perangkat desktop maupun *mobile*.
+
+## Last Update (Terbaru)
+
+**Update 12 Juli 2026 (feature_2_12072026)**
+- Memperbaiki tata letak (layout) *Dashboard* pada versi *mobile* (jarak batas bawah dan ukuran kotak obrolan diperbaiki).
+- Mengimplementasikan fitur *Global Chat Bubble* khusus untuk versi *desktop* agar *AI Chat Assistant* dapat diakses secara mengambang dari mana saja.
+- Menghapus tulisan "Rp Rp" ganda yang muncul akibat konflik pembentukan format Rupiah di halaman *Dashboard* dan *Pengaturan* (Sumber Uang & Anggaran).
+- Menyatukan informasi *Statistics* dan *Dashboard* pada mode layar *desktop*.
 
 ## Project Structure
 
