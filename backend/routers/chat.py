@@ -21,6 +21,7 @@ except ModuleNotFoundError:
 router = APIRouter(tags=["chat"])
 
 
+@router.post("/chat")
 async def post_chat(
     payload: ChatMessageRequest,
     current_user: TokenPayload = Depends(get_current_user),
