@@ -2,11 +2,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import SummaryCards from '../components/SummaryCards.vue'
 import ChatBox from '../components/ChatBox.vue'
-import FundSourcePickerModal from '../components/FundSourcePickerModal.vue'
 import { useBudget } from '../composables/useBudget'
 import { useStatistics } from '../composables/useStatistics'
 import { useFundSources } from '../composables/useFundSources'
-import { confirmTransactions as confirmTransactionsApi } from '../services/api'
 import { formatRupiah } from '../utils/formatters'
 
 import {
@@ -60,36 +58,12 @@ const { summary: budgetSummary, fetchBudgetSummary } = useBudget()
 const { loading: statsLoading, dailyTransactions, monthlySummaries, allCategories, fetchStatisticsData } = useStatistics()
 const { sources: fundSources, fetchSources } = useFundSources()
 
-const showFundSourceModal = ref(false)
-const currentPendingTransactions = ref([])
-const isConfirming = ref(false)
-
 async function handleTransactionAdded() {
   await fetchSources()
   emit('refresh')
   const today = new Date()
   const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
   await fetchBudgetSummary(currentMonthKey)
-}
-
-function handleRequiresFundSource(pending) {
-  currentPendingTransactions.value = pending
-  showFundSourceModal.value = true
-}
-
-async function handleConfirmTransactions(confirmed) {
-  isConfirming.value = true
-  try {
-    await confirmTransactionsApi({ transactions: confirmed })
-    await handleTransactionAdded()
-    showFundSourceModal.value = false
-    currentPendingTransactions.value = []
-  } catch (error) {
-    console.error('Failed to confirm transactions:', error)
-    alert('Gagal menyimpan transaksi.')
-  } finally {
-    isConfirming.value = false
-  }
 }
 
 // Global/Dashboard init
@@ -359,7 +333,6 @@ function handleNextMonth() {
       <ChatBox 
         :fund-sources="fundSources"
         @transaction-added="handleTransactionAdded"
-        @requires-fund-source="handleRequiresFundSource"
         class="h-full flex flex-col shadow-sm rounded-3xl bg-white border border-slate-100"
       />
     </section>
@@ -484,14 +457,5 @@ function handleNextMonth() {
       </div>
     </section>
 
-    <!-- Fund Source Picker Modal (Mobile Chatbot) -->
-    <FundSourcePickerModal
-      :show="showFundSourceModal"
-      :pending-transactions="currentPendingTransactions"
-      :fund-sources="fundSources"
-      :is-loading="isConfirming"
-      @close="showFundSourceModal = false; currentPendingTransactions = []"
-      @confirm="handleConfirmTransactions"
-    />
   </div>
 </template>

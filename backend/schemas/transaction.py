@@ -15,7 +15,7 @@ class TransactionCreate(BaseModel):
     category: str = Field(min_length=1, max_length=100)
     description: str | None = Field(default=None, max_length=255)
     date: date
-    fund_source_id: int
+    fund_source_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

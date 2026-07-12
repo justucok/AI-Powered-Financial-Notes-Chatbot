@@ -2,10 +2,11 @@
 import { nextTick, ref, watchEffect } from 'vue'
 
 import { useChat } from '../composables/useChat'
+import FundSourcePickerModal from './FundSourcePickerModal.vue'
+import { confirmTransactions as confirmTransactionsApi } from '../services/api'
 
 const emit = defineEmits({
   'transaction-added': (payload) => payload && typeof payload === 'object',
-  'requires-fund-source': (pending, reply) => true,
 })
 
 const props = defineProps({
@@ -18,6 +19,11 @@ const props = defineProps({
 const fileInputRef = ref(null)
 const messagesContainerRef = ref(null)
 
+const showFundSourceModal = ref(false)
+const currentPendingTransactions = ref([])
+const currentReply = ref('')
+const isConfirming = ref(false)
+
 const {
   messages,
   isLoading,
@@ -27,14 +33,42 @@ const {
   selectImage,
   clearImage,
   submitCurrentInput,
+  appendBotMessage,
 } = useChat(
   (transaction) => {
     emit('transaction-added', transaction)
   },
   (pending, reply) => {
-    emit('requires-fund-source', pending, reply)
+    currentPendingTransactions.value = pending
+    currentReply.value = reply
+    showFundSourceModal.value = true
   }
 )
+
+function handleCancelTransaction() {
+  showFundSourceModal.value = false
+  currentPendingTransactions.value = []
+  appendBotMessage('Transaksi dibatalkan dan tidak tercatat.', false, false)
+}
+
+async function handleConfirmTransactions(confirmed) {
+  isConfirming.value = true
+  try {
+    const res = await confirmTransactionsApi({ transactions: confirmed })
+    showFundSourceModal.value = false
+    currentPendingTransactions.value = []
+    
+    appendBotMessage(currentReply.value || 'Transaksi berhasil dicatat.', true, false)
+    
+    // We emit an empty object since it's just meant to trigger a refresh in the parent
+    emit('transaction-added', res?.data || {})
+  } catch (error) {
+    console.error('Failed to confirm transactions:', error)
+    alert('Gagal menyimpan transaksi.')
+  } finally {
+    isConfirming.value = false
+  }
+}
 
 async function handleSubmit() {
   await submitCurrentInput(props.fundSources)
@@ -89,7 +123,7 @@ function handleClearImage() {
 
     <div
       ref="messagesContainerRef"
-      class="flex-1 min-h-[26rem] space-y-4 overflow-y-auto rounded-[1.5rem] bg-slate-50/80 p-4"
+      class="flex-1 min-h-0 space-y-4 overflow-y-auto rounded-[1.5rem] bg-slate-50/80 p-4"
     >
       <article
         v-for="(message, index) in messages"
@@ -203,6 +237,15 @@ function handleClearImage() {
         Kirim
       </button>
     </form>
+
+    <FundSourcePickerModal
+      :show="showFundSourceModal"
+      :pending-transactions="currentPendingTransactions"
+      :fund-sources="fundSources"
+      :is-loading="isConfirming"
+      @close="handleCancelTransaction"
+      @confirm="handleConfirmTransactions"
+    />
   </section>
 </template>
 

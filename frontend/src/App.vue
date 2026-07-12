@@ -24,6 +24,7 @@ const {
   fetchAll,
   createTransaction,
   deleteTransaction,
+  updateTransaction,
   setMonth,
 } = useTransactions()
 
@@ -84,6 +85,7 @@ function handleLogout() {
       :selected-month="selectedMonth"
       @month-changed="setMonth"
       @delete-transaction="deleteTransaction"
+      @edit-transaction="(data) => updateTransaction(data.id, data)"
     />
 
     <StatisticsPage

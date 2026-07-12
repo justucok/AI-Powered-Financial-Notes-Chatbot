@@ -60,6 +60,25 @@ async def create(db: AsyncSession, data: TransactionCreate) -> Transaction:
     return transaction
 
 
+async def update(db: AsyncSession, id: int, data: TransactionCreate) -> Transaction | None:
+    """Update an existing transaction and return the updated entity when found."""
+
+    transaction = await db.get(Transaction, id)
+    if transaction is None:
+        return None
+
+    transaction.type = data.type
+    transaction.amount = data.amount
+    transaction.category = data.category
+    transaction.description = data.description
+    transaction.date = data.date
+    transaction.fund_source_id = data.fund_source_id
+
+    await db.commit()
+    await db.refresh(transaction)
+    return transaction
+
+
 async def delete(db: AsyncSession, id: int) -> Transaction | None:
     """Delete a transaction by id and return the removed entity when found."""
 

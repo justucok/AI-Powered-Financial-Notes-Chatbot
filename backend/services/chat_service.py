@@ -121,10 +121,8 @@ async def handle_text_message(
                 source_name = tx_item.get("fund_source_name")
                 matched_id = _find_source_id(fund_sources, source_name)
                 
-                # If the user has fund sources but we couldn't confidently match one,
-                # we need to ask the user. (Only if there are any fund sources available)
-                if matched_id is None and fund_sources and len(fund_sources) > 0:
-                    needs_source = True
+                # Always require confirmation popup before saving
+                needs_source = True
                 
                 transaction_data["fund_source_id"] = matched_id
                 processed_transactions.append(transaction_data)
@@ -312,7 +310,7 @@ async def handle_image_message(
     result = await gemini_service.process_image(image_bytes, mime_type, message, nickname, greeting, categories)
 
     if result.get("is_transaction") and result.get("transactions"):
-        saved_transactions: list[TransactionResponse] = []
+        processed_transactions = []
         for tx_item in result["transactions"]:
             try:
                 transaction_data = _normalize_transaction_payload(tx_item)
@@ -320,22 +318,34 @@ async def handle_image_message(
                 if fund_sources and len(fund_sources) > 0:
                     transaction_data["fund_source_id"] = fund_sources[0]["id"]
                 else:
-                    transaction_data["fund_source_id"] = 1  # Fallback
-                    
-                tx_create = TransactionCreate(**transaction_data)
-                transaction = await transaction_repository.create(db, tx_create)
-                saved_transactions.append(TransactionResponse.model_validate(transaction))
+                    transaction_data["fund_source_id"] = None
+                processed_transactions.append(transaction_data)
             except (KeyError, TypeError, ValidationError):
                 pass
 
-        if saved_transactions:
-            return _build_transaction_reply(result, saved_transactions)
+        if not processed_transactions:
+            return {
+                "reply": result.get(
+                    "reply",
+                    "Maaf, detail transaksi pada gambar belum cukup jelas untuk dicatat.",
+                ),
+            }
+
+        pending = []
+        for tx in processed_transactions:
+            pending.append({
+                "type": tx["type"],
+                "amount": tx["amount"],
+                "category": tx["category"],
+                "description": tx["description"],
+                "date": tx["date"],
+                "fund_source_id": tx.get("fund_source_id"),
+            })
 
         return {
-            "reply": result.get(
-                "reply",
-                "Maaf, detail transaksi pada gambar belum cukup jelas untuk dicatat.",
-            ),
+            "reply": result.get("reply", "Pilih sumber uang dan pastikan transaksi Anda benar."),
+            "requires_fund_source": True,
+            "pending_transactions": pending,
         }
 
     return {

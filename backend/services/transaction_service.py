@@ -52,6 +52,19 @@ async def create_transaction(
     return TransactionResponse.model_validate(transaction)
 
 
+async def update_transaction(
+    db: AsyncSession,
+    id: int,
+    data: TransactionCreate,
+) -> TransactionResponse:
+    """Update a transaction and return the serialized result."""
+
+    transaction = await transaction_repository.update(db, id, data)
+    if transaction is None:
+        raise ValueError("Transaction not found.")
+    return TransactionResponse.model_validate(transaction)
+
+
 async def delete_transaction(db: AsyncSession, id: int) -> dict[str, str | int]:
     """Delete a transaction and return a simple status payload."""
 

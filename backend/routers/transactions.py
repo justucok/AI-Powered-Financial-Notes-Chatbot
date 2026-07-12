@@ -72,6 +72,23 @@ async def confirm_transactions(
     return responses
 
 
+@router.put("/transactions/{id}", response_model=TransactionResponse)
+async def update_transaction(
+    id: int,
+    data: TransactionCreate,
+    db: AsyncSession = Depends(get_db_for_current_user),
+) -> TransactionResponse:
+    """Handle requests for updating a transaction (authenticated user only)."""
+
+    try:
+        return await transaction_service.update_transaction(db, id, data)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
 @router.delete("/transactions/{id}", response_model=dict[str, str | int])
 async def delete_transaction(
     id: int,

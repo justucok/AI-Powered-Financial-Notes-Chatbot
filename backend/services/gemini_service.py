@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-MODEL_NAME = "gemini-3.5-flash"
+MODEL_NAME = "gemini-3.1-flash-lite"
 ERROR_FALLBACK: dict[str, Any] = {
     "is_transaction": False,
     "transactions": [],
@@ -321,18 +321,26 @@ async def process_chat(
     prompt = _build_chat_prompt(message, history, nickname, greeting, fund_sources, categories)
     generation_config = _get_generation_config(CHAT_RESPONSE_SCHEMA)
 
+    print(f"\n[LOG] ===================== Mengirim Pesan ke Gemini =====================")
+    print(f"[LOG] Prompt:\n{prompt}")
+    print(f"[LOG] ======================================================================\n")
+
     try:
         response = await _get_client().aio.models.generate_content(
             model=MODEL_NAME,
             contents=prompt,
             config=generation_config,
         )
+        print("[LOG] Berhasil mendapatkan balasan dari Gemini.")
         return _parse_response(response)
-    except errors.APIError:
+    except errors.APIError as e:
+        print(f"[LOG] Gagal mengirim pesan ke Gemini: API Error: {e}")
         logger.exception("Gemini API returned an error for chat processing.")
-    except JSONDecodeError:
+    except JSONDecodeError as e:
+        print(f"[LOG] Gagal memproses balasan: JSONDecodeError: {e}")
         logger.exception("Gemini returned invalid JSON for chat processing.")
-    except Exception:
+    except Exception as e:
+        print(f"[LOG] Gagal: Exception lainnya: {e}")
         logger.exception("Gemini chat processing failed.")
 
     return ERROR_FALLBACK.copy()

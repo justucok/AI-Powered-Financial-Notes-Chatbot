@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import {
   createTransaction as createTransactionRequest,
   deleteTransaction as deleteTransactionRequest,
+  updateTransaction as updateTransactionRequest,
   getSummary,
   getTransactions,
 } from '../services/api'
@@ -88,6 +89,18 @@ export function useTransactions() {
     }
   }
 
+  async function updateTransaction(id, data) {
+    loading.value = true
+
+    try {
+      const response = await updateTransactionRequest(id, data)
+      await fetchAll()
+      return response
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function setMonth(month) {
     selectedMonth.value = month
     await fetchAll()
@@ -103,6 +116,7 @@ export function useTransactions() {
     fetchAll,
     createTransaction,
     deleteTransaction,
+    updateTransaction,
     setMonth,
   }
 }

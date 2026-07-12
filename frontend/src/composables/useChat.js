@@ -83,7 +83,6 @@ export function useChat(onTransactionAdded = () => {}, onRequiresFundSource = ()
       
       if (response.requires_fund_source) {
         onRequiresFundSource(response.pending_transactions, response.reply)
-        appendBotMessage(response.reply || 'Pilih sumber uang untuk transaksi Anda.')
         return
       }
 
@@ -135,6 +134,12 @@ export function useChat(onTransactionAdded = () => {}, onRequiresFundSource = ()
 
     try {
       const response = await sendChatImage(file, trimmedMessage)
+      
+      if (response.requires_fund_source) {
+        onRequiresFundSource(response.pending_transactions, response.reply)
+        return
+      }
+
       const hasTransaction = isRecordedTransaction(response.data) && response.action !== 'add_fund_source_success'
       const hasFundSource = response.action === 'add_fund_source_success'
 
@@ -181,5 +186,6 @@ export function useChat(onTransactionAdded = () => {}, onRequiresFundSource = ()
     selectImage,
     clearImage,
     submitCurrentInput,
+    appendBotMessage,
   }
 }
