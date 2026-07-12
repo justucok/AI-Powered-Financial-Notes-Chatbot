@@ -74,7 +74,7 @@ export function isLoggedIn() {
 // Auth API calls
 // ---------------------------------------------------------------------------
 
-const authClient = axios.create({ baseURL: '/api' })
+const authClient = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || '/api' })
 
 /**
  * Register a new user account with extended info.
