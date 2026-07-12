@@ -169,7 +169,9 @@ Terapkan aturan ini di setiap baris kode:
 
 Terapkan konvensi Git berikut ini pada setiap perubahan kode:
 
-- **Penamaan Branch**: Wajib menggunakan format `feature_{urutan-fitur}_{DDMMYYYY}` (contoh: `feature_1_12072026`).
+- **Penamaan Branch**: 
+  - Untuk fitur baru, wajib menggunakan format `feature_{urutan-fitur}_{DDMMYYYY}` (contoh: `feature_1_12072026`).
+  - Untuk perbaikan bug/error, wajib menggunakan format `fix_{perbaikan_tentang_apa}_{DDMMYYYY}` (contoh: `fix_missing_chat_decorator_12072026`).
 - **Pesan Commit**: Selalu gunakan Conventional Commits format dengan jelas (contoh: `feat: [deskripsi fitur]`, `fix: [deskripsi perbaikan]`, `refactor: [deskripsi refactor]`).
 
 ---
