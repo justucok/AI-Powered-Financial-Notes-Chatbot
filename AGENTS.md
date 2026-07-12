@@ -165,6 +165,15 @@ Terapkan aturan ini di setiap baris kode:
 
 ---
 
+### 5. Git Version Control Rules
+
+Terapkan konvensi Git berikut ini pada setiap perubahan kode:
+
+- **Penamaan Branch**: Wajib menggunakan format `feature_{urutan-fitur}_{DDMMYYYY}` (contoh: `feature_1_12072026`).
+- **Pesan Commit**: Selalu gunakan Conventional Commits format dengan jelas (contoh: `feat: [deskripsi fitur]`, `fix: [deskripsi perbaikan]`, `refactor: [deskripsi refactor]`).
+
+---
+
 ## Architecture
 
 ```
