@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from functools import lru_cache
 from json import JSONDecodeError
 from typing import Any
@@ -19,6 +20,7 @@ settings = get_settings()
 MODEL_NAME = "gemini-3.5-flash"
 ERROR_FALLBACK: dict[str, Any] = {
     "is_transaction": False,
+    "transactions": [],
     "action": "chat",
     "reply": "Maaf, terjadi kesalahan teknis.",
 }
@@ -27,24 +29,74 @@ Kamu adalah asisten keuangan pribadi yang profesional dan formal.
 Tugasmu adalah membantu pengguna mencatat dan memantau keuangan pribadi mereka.
 
 INSTRUKSI UTAMA:
-1. Jika pengguna menyebutkan transaksi keuangan, ekstrak data dan kembalikan dalam format JSON berikut:
+1. Jika pengguna menyebutkan transaksi keuangan (bisa satu atau lebih dari satu transaksi sekaligus), ekstrak semua transaksi tersebut ke dalam list "transactions" pada format JSON berikut:
 {
   "is_transaction": true,
-  "type": "income" atau "expense",
-  "amount": <angka tanpa titik/koma>,
-  "category": <string, contoh: Makanan, Transport, Gaji, dll>,
-  "description": <string deskripsi singkat>,
-  "date": <"YYYY-MM-DD" atau null jika tidak disebutkan>
+  "transactions": [
+    {
+      "type": "income" atau "expense",
+      "amount": <angka tanpa titik/koma>,
+      "category": <string, contoh: Makanan, Transport, Gaji, dll>,
+      "description": <string deskripsi singkat>,
+      "date": <"YYYY-MM-DD" atau null jika tidak disebutkan>
+    }
+  ],
+  "reply": <string balasan formal yang menyapa pengguna dan menegaskan seluruh transaksi yang berhasil dicatat>
 }
 
 2. Jika pengguna bertanya tentang saldo atau ringkasan bulan tertentu, kembalikan:
 {
   "is_transaction": false,
   "action": "query_summary",
-  "month": <"YYYY-MM" atau null>
+  "month": <"YYYY-MM" atau null>,
+  "reply": <string balasan formal terkait ringkasan>
 }
 
-3. Jika bukan transaksi dan bukan query keuangan, balas secara natural:
+3. Jika pengguna ingin menambahkan sumber uang (seperti bank, e-wallet, dompet, dll) baru, kembalikan:
+{
+  "is_transaction": false,
+  "action": "add_fund_source",
+  "fund_source": {
+    "name": <string, nama sumber uang>,
+    "type": <string, "bank", "ewallet", "cash", atau "other">,
+    "icon": <string emoji, contoh: 💳, 📱, 💵>,
+    "initial_balance": <angka tanpa titik/koma>
+  },
+  "reply": <string balasan formal>
+}
+
+4. Jika pengguna ingin mengatur/mengubah budget (anggaran pengeluaran) bulanan secara total (contoh: "atur budget bulan ini 5 juta", "set budget 3.000.000"), kembalikan:
+{
+  "is_transaction": false,
+  "action": "set_budget",
+  "budget": {
+    "month": <"YYYY-MM" format, default bulan berjalan jika tidak ditentukan>,
+    "amount": <angka nominal budget tanpa titik/koma>
+  },
+  "reply": <string balasan formal>
+}
+
+5. Jika pengguna ingin mengatur/mengubah budget untuk kategori pengeluaran tertentu (contoh: "set budget makanan 1.5 juta", "atur budget kategori transportasi 500 ribu"), kembalikan:
+{
+  "is_transaction": false,
+  "action": "set_category_budget",
+  "category_budget": {
+    "month": <"YYYY-MM" format, default bulan berjalan jika tidak ditentukan>,
+    "category_name": <string nama kategori yang diatur budgetnya>,
+    "amount": <angka nominal budget tanpa titik/koma>
+  },
+  "reply": <string balasan formal>
+}
+
+6. Jika pengguna meminta untuk dipanggil dengan sebutan/sapaan lain (contoh: "panggil saya kak", "panggil saya mba", "jangan panggil bapak"), kembalikan:
+{
+  "is_transaction": false,
+  "action": "update_greeting",
+  "greeting": <string panggilan baru, contoh: "Kak", "Mba", "Bro">,
+  "reply": <string balasan formal yang mengonfirmasi bahwa mulai sekarang bot akan memanggil dengan sebutan tersebut>
+}
+
+7. Jika bukan transaksi, bukan query keuangan, bukan penambahan sumber uang, bukan pengaturan budget, dan bukan permintaan ubah nama panggilan, balas secara natural:
 {
   "is_transaction": false,
   "action": "chat",
@@ -54,20 +106,25 @@ INSTRUKSI UTAMA:
 ATURAN:
 - Selalu gunakan Bahasa Indonesia yang formal dan sopan
 - Jika amount tidak jelas, tanyakan kembali kepada pengguna
-- Kategori umum: Makanan, Transport, Belanja, Kesehatan, Hiburan, Gaji, Freelance, Investasi, Lainnya
+- Kategori transaksi harus sesuai dengan daftar kategori pengguna. Jika tidak ada yang cocok, gunakan salah satu kategori yang paling relevan.
 - Jangan pernah mengasumsikan amount jika tidak disebutkan secara eksplisit
 """.strip()
+
 IMAGE_EXTRACTION_PROMPT = """
 Analisis gambar nota atau bukti transaksi ini.
-Ekstrak data transaksi dan kembalikan hanya JSON dengan struktur berikut:
+Ekstrak semua transaksi yang tertera (bisa satu atau lebih jika berupa gabungan struk) dan kembalikan hanya JSON dengan struktur berikut:
 {
   "is_transaction": true atau false,
-  "type": "income" atau "expense" atau null,
-  "amount": <angka tanpa titik/koma atau null>,
-  "category": <string kategori atau null>,
-  "description": <deskripsi singkat transaksi atau null>,
-  "date": <"YYYY-MM-DD" atau null>,
-  "reply": <balasan formal singkat dalam Bahasa Indonesia>
+  "transactions": [
+    {
+      "type": "income" atau "expense",
+      "amount": <angka tanpa titik/koma>,
+      "category": <string kategori>,
+      "description": <deskripsi singkat transaksi>,
+      "date": <"YYYY-MM-DD" atau null>
+    }
+  ],
+  "reply": <balasan formal singkat dalam Bahasa Indonesia mengenai apa saja yang berhasil dicatat>
 }
 
 ATURAN:
@@ -75,30 +132,76 @@ ATURAN:
 - Jangan mengarang nominal atau tanggal
 - Gunakan Bahasa Indonesia yang formal dan sopan
 """.strip()
+
 CHAT_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "is_transaction": {"type": "boolean"},
-        "type": {"type": ["string", "null"]},
-        "amount": {"type": ["number", "null"]},
-        "category": {"type": ["string", "null"]},
-        "description": {"type": ["string", "null"]},
-        "date": {"type": ["string", "null"]},
+        "transactions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string"},
+                    "amount": {"type": "number"},
+                    "category": {"type": "string"},
+                    "description": {"type": ["string", "null"]},
+                    "date": {"type": ["string", "null"]},
+                    "fund_source_name": {"type": ["string", "null"]},
+                },
+                "required": ["type", "amount", "category"]
+            }
+        },
         "action": {"type": ["string", "null"]},
         "month": {"type": ["string", "null"]},
         "reply": {"type": ["string", "null"]},
+        "greeting": {"type": ["string", "null"]},
+        "fund_source": {
+            "type": ["object", "null"],
+            "properties": {
+                "name": {"type": "string"},
+                "type": {"type": "string"},
+                "icon": {"type": "string"},
+                "initial_balance": {"type": "number"}
+            }
+        },
+        "budget": {
+            "type": ["object", "null"],
+            "properties": {
+                "month": {"type": "string"},
+                "amount": {"type": "number"}
+            }
+        },
+        "category_budget": {
+            "type": ["object", "null"],
+            "properties": {
+                "month": {"type": "string"},
+                "category_name": {"type": "string"},
+                "amount": {"type": "number"}
+            }
+        }
     },
     "required": ["is_transaction"],
 }
+
 IMAGE_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "is_transaction": {"type": "boolean"},
-        "type": {"type": ["string", "null"]},
-        "amount": {"type": ["number", "null"]},
-        "category": {"type": ["string", "null"]},
-        "description": {"type": ["string", "null"]},
-        "date": {"type": ["string", "null"]},
+        "transactions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string"},
+                    "amount": {"type": "number"},
+                    "category": {"type": "string"},
+                    "description": {"type": ["string", "null"]},
+                    "date": {"type": ["string", "null"]},
+                },
+                "required": ["type", "amount", "category"]
+            }
+        },
         "reply": {"type": ["string", "null"]},
     },
     "required": ["is_transaction"],
@@ -125,18 +228,57 @@ def _format_history(history: list[dict[str, Any]]) -> str:
     return "\n".join(formatted_messages)
 
 
-def _build_chat_prompt(message: str, history: list[dict[str, Any]]) -> str:
-    """Build the text prompt sent to Gemini for chat processing."""
+def _build_chat_prompt(
+    message: str,
+    history: list[dict[str, Any]],
+    nickname: str | None = None,
+    greeting: str | None = None,
+    fund_sources: list[dict[str, Any]] | None = None,
+    categories: list[Any] | None = None,
+) -> str:
+    """Build the text prompt sent to Gemini for chat processing.
+
+    Injects the user's nickname preference and available fund sources.
+    """
+
+    current_date = datetime.now()
+    current_month_str = current_date.strftime("%Y-%m")
+    system_prompt = CHAT_SYSTEM_PROMPT + f"\n\nKONTEKS TANGGAL SAAT INI:\n- Bulan berjalan saat ini (ini/bulan ini) adalah: {current_month_str} (format YYYY-MM)."
+    
+    greeting_str = greeting or "Bapak/Ibu"
+    if nickname:
+        system_prompt += (
+            f"\n\nATURAN TAMBAHAN:\n"
+            f"- Nama pengguna adalah: '{nickname}', dan sapaan yang disukai adalah '{greeting_str}'.\n"
+            f"- Sapa dan panggil pengguna dengan sebutan '{greeting_str} {nickname}' secara formal dan sopan "
+            f"(contoh: 'Baik, {greeting_str} {nickname}' atau 'Silakan {greeting_str}')."
+        )
+    
+    if fund_sources:
+        sources_str = ", ".join(f'"{s["name"]}" ({s["type"]})' for s in fund_sources)
+        system_prompt += (
+            f"\n\nSUMBER UANG TERSEDIA: {sources_str}\n"
+            f"- Jika pengguna menyebutkan salah satu sumber uang, isi 'fund_source_name' pada item transaksi dengan nama yang paling cocok.\n"
+            f"- Jika sumber uang tidak disebutkan dengan jelas, isi 'fund_source_name' dengan null."
+        )
+
+    if categories:
+        cats_str = ", ".join(f'"{c.name}" ({c.type})' for c in categories)
+        system_prompt += (
+            f"\n\nKATEGORI TRANSAKSI PENGGUNA SAAT INI: {cats_str}\n"
+            f"- Harap klasifikasikan transaksi ke dalam salah satu kategori di atas.\n"
+            f"- Jika tidak ada yang pas, pilih yang paling mendekati."
+        )
 
     history_text = _format_history(history)
     if history_text:
         return (
-            f"{CHAT_SYSTEM_PROMPT}\n\n"
+            f"{system_prompt}\n\n"
             f"Riwayat percakapan terakhir:\n{history_text}\n\n"
             f"Pesan pengguna terbaru:\n{message}"
         )
 
-    return f"{CHAT_SYSTEM_PROMPT}\n\nPesan pengguna terbaru:\n{message}"
+    return f"{system_prompt}\n\nPesan pengguna terbaru:\n{message}"
 
 
 def _get_generation_config(schema: dict[str, Any]) -> types.GenerateContentConfig:
@@ -166,10 +308,17 @@ def _parse_response(response: Any) -> dict[str, Any]:
     return loaded_response
 
 
-async def process_chat(message: str, history: list[dict[str, Any]]) -> dict[str, Any]:
+async def process_chat(
+    message: str,
+    history: list[dict[str, Any]],
+    nickname: str | None = None,
+    greeting: str | None = None,
+    fund_sources: list[dict[str, Any]] | None = None,
+    categories: list[Any] | None = None,
+) -> dict[str, Any]:
     """Process a text message with Gemini and return structured JSON output."""
 
-    prompt = _build_chat_prompt(message, history)
+    prompt = _build_chat_prompt(message, history, nickname, greeting, fund_sources, categories)
     generation_config = _get_generation_config(CHAT_RESPONSE_SCHEMA)
 
     try:
@@ -193,16 +342,35 @@ async def process_image(
     image_bytes: bytes,
     mime_type: str,
     message: str = "",
+    nickname: str | None = None,
+    greeting: str | None = None,
+    categories: list[Any] | None = None,
 ) -> dict[str, Any]:
     """Process a receipt image with Gemini and return structured JSON output."""
 
     generation_config = _get_generation_config(IMAGE_RESPONSE_SCHEMA)
     trimmed_message = message.strip()
+    
     prompt = IMAGE_EXTRACTION_PROMPT
+    greeting_str = greeting or "Bapak/Ibu"
+    if nickname:
+        prompt += (
+            f"\n\nATURAN TAMBAHAN:\n"
+            f"- Nama pengguna adalah: '{nickname}', dan sapaan yang disukai adalah '{greeting_str}'.\n"
+            f"- Sapa dan panggil pengguna dengan sebutan '{greeting_str} {nickname}' secara formal dan sopan "
+            f"pada field 'reply' (contoh: 'Baik, {greeting_str} {nickname}' atau 'Silakan {greeting_str}')."
+        )
+    
+    if categories:
+        cats_str = ", ".join(f'"{c.name}" ({c.type})' for c in categories)
+        prompt += (
+            f"\n\nKATEGORI TRANSAKSI PENGGUNA SAAT INI: {cats_str}\n"
+            f"- Harap klasifikasikan transaksi ke dalam salah satu kategori di atas jika memungkinkan."
+        )
 
     if trimmed_message:
         prompt = (
-            f"{IMAGE_EXTRACTION_PROMPT}\n\n"
+            f"{prompt}\n\n"
             f"Konteks tambahan dari pengguna:\n{trimmed_message}"
         )
 

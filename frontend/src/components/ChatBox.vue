@@ -5,9 +5,15 @@ import { useChat } from '../composables/useChat'
 
 const emit = defineEmits({
   'transaction-added': (payload) => payload && typeof payload === 'object',
+  'requires-fund-source': (pending, reply) => true,
 })
 
-defineProps({})
+const props = defineProps({
+  fundSources: {
+    type: Array,
+    default: () => [],
+  }
+})
 
 const fileInputRef = ref(null)
 const messagesContainerRef = ref(null)
@@ -21,9 +27,22 @@ const {
   selectImage,
   clearImage,
   submitCurrentInput,
-} = useChat((transaction) => {
-  emit('transaction-added', transaction)
-})
+} = useChat(
+  (transaction) => {
+    emit('transaction-added', transaction)
+  },
+  (pending, reply) => {
+    emit('requires-fund-source', pending, reply)
+  }
+)
+
+async function handleSubmit() {
+  await submitCurrentInput(props.fundSources)
+
+  if (!selectedImageFile.value && fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
 
 watchEffect(() => {
   messages.value.length
@@ -53,13 +72,6 @@ function handleClearImage() {
   }
 }
 
-async function handleSubmit() {
-  await submitCurrentInput()
-
-  if (!selectedImageFile.value && fileInputRef.value) {
-    fileInputRef.value.value = ''
-  }
-}
 </script>
 
 <template>
@@ -111,6 +123,12 @@ async function handleSubmit() {
             class="mt-2 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"
           >
             ✅ Transaksi Dicatat
+          </span>
+          <span
+            v-if="message.hasFundSource"
+            class="mt-2 ml-2 inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700"
+          >
+            💳 Sumber Uang Ditambahkan
           </span>
         </div>
       </article>
@@ -170,12 +188,13 @@ async function handleSubmit() {
       >
         📎
       </button>
-      <input
+      <textarea
         v-model="draftMessage"
-        type="text"
+        rows="1"
         placeholder="Tulis transaksi atau pertanyaan keuangan..."
-        class="h-12 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
-      >
+        class="min-h-12 max-h-32 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 resize-none"
+        @keydown.enter.exact.prevent="handleSubmit"
+      />
       <button
         type="submit"
         :disabled="isLoading"

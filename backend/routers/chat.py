@@ -5,13 +5,17 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 try:
-    from backend.database import get_db
+    from backend.dependencies.auth import get_current_user, get_db_for_current_user
+    from backend.schemas.auth import TokenPayload
     from backend.schemas.chat import ChatMessageRequest
     from backend.services import chat_service
+    from backend.database import get_auth_db
 except ModuleNotFoundError:
-    from database import get_db
+    from dependencies.auth import get_current_user, get_db_for_current_user
+    from schemas.auth import TokenPayload
     from schemas.chat import ChatMessageRequest
     from services import chat_service
+    from database import get_auth_db
 
 
 router = APIRouter(tags=["chat"])
@@ -20,11 +24,22 @@ router = APIRouter(tags=["chat"])
 @router.post("/chat")
 async def post_chat(
     payload: ChatMessageRequest,
-    db: AsyncSession = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_for_current_user),
+    auth_db: AsyncSession = Depends(get_auth_db),
 ) -> JSONResponse:
-    """Handle text chat requests."""
+    """Handle text chat requests (authenticated user with nickname preference)."""
 
-    result = await chat_service.handle_text_message(db, payload.message, payload.history)
+    result = await chat_service.handle_text_message(
+        db=db,
+        message=payload.message,
+        history=payload.history,
+        nickname=current_user.nickname,
+        greeting=current_user.preferred_greeting,
+        fund_sources=payload.fund_sources,
+        auth_db=auth_db,
+        current_user=current_user,
+    )
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)
 
 
@@ -32,9 +47,11 @@ async def post_chat(
 async def post_chat_image(
     file: UploadFile = File(...),
     message: Annotated[str, Form()] = "",
-    db: AsyncSession = Depends(get_db),
+    fund_sources: Annotated[str, Form()] = "[]",
+    current_user: TokenPayload = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_for_current_user),
 ) -> JSONResponse:
-    """Handle image chat requests."""
+    """Handle image chat requests (authenticated user with nickname preference)."""
 
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(
@@ -42,6 +59,20 @@ async def post_chat_image(
             detail="File must be an image.",
         )
 
+    import json
+    try:
+        fund_sources_list = json.loads(fund_sources)
+    except Exception:
+        fund_sources_list = []
+
     image_bytes = await file.read()
-    result = await chat_service.handle_image_message(db, image_bytes, file.content_type, message)
+    result = await chat_service.handle_image_message(
+        db=db,
+        image_bytes=image_bytes,
+        mime_type=file.content_type,
+        message=message,
+        nickname=current_user.nickname,
+        greeting=current_user.preferred_greeting,
+        fund_sources=fund_sources_list,
+    )
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)

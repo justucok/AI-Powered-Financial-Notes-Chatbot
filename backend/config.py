@@ -15,12 +15,35 @@ class Settings(BaseSettings):
         default="/api/v1",
         validation_alias=AliasChoices("API_V1_PREFIX"),
     )
-    database_url: str = Field(
-        default="sqlite+aiosqlite:///./financial_notes.db",
-        validation_alias=AliasChoices("DATABASE_URL"),
+    secret_key: str = Field(
+        validation_alias=AliasChoices("SECRET_KEY"),
+    )
+    access_token_expire_days: int = Field(
+        default=7,
+        validation_alias=AliasChoices("ACCESS_TOKEN_EXPIRE_DAYS"),
     )
     gemini_api_key: str = Field(
         validation_alias=AliasChoices("GEMINI_API_KEY"),
+    )
+    smtp_server: str = Field(
+        default="smtp.gmail.com",
+        validation_alias=AliasChoices("SMTP_SERVER"),
+    )
+    smtp_port: int = Field(
+        default=587,
+        validation_alias=AliasChoices("SMTP_PORT"),
+    )
+    smtp_username: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SMTP_USERNAME"),
+    )
+    smtp_password: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SMTP_PASSWORD"),
+    )
+    frontend_url: str = Field(
+        default="http://localhost:5173",
+        validation_alias=AliasChoices("FRONTEND_URL"),
     )
 
     model_config = SettingsConfigDict(

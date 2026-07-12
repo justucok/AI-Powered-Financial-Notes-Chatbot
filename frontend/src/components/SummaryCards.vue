@@ -33,15 +33,18 @@ const cards = [
 </script>
 
 <template>
-  <section class="grid grid-cols-1 gap-5 md:grid-cols-3">
+  <section class="grid grid-cols-2 gap-3 md:gap-5 md:grid-cols-3">
     <article
       v-for="card in cards"
       :key="card.key"
       :class="[
-        'group relative overflow-hidden rounded-[1.75rem] bg-white p-6 ring-1 transition-transform duration-300 hover:-translate-y-1',
+        'group relative overflow-hidden rounded-[1.25rem] md:rounded-[1.75rem] bg-white p-4 md:p-6 ring-1 transition-all duration-300 hover:-translate-y-1',
         card.ring,
         card.glow,
+        card.key === 'balance' ? 'col-span-2 md:col-span-1' : 'col-span-1',
+        card.key !== 'balance' ? 'cursor-pointer hover:bg-slate-50/50' : ''
       ]"
+      @click="card.key !== 'balance' && $emit('card-click', card.key)"
     >
       <div
         :class="[
@@ -52,10 +55,10 @@ const cards = [
       <div class="absolute -right-12 -top-14 h-28 w-28 rounded-full bg-slate-100/80 blur-2xl transition-transform duration-500 group-hover:scale-125" />
 
       <div class="relative">
-        <p class="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
+        <p class="text-xs md:text-sm font-medium uppercase tracking-widest md:tracking-[0.24em] text-slate-500">
           {{ card.label }}
         </p>
-        <p class="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+        <p class="mt-2 md:mt-4 text-xl sm:text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
           {{
             formatRupiah(
               card.key === 'balance'
@@ -66,7 +69,7 @@ const cards = [
             )
           }}
         </p>
-        <p class="mt-3 text-sm leading-6 text-slate-600">
+        <p class="mt-3 text-sm leading-6 text-slate-600 hidden md:block">
           {{
             card.key === 'balance'
               ? 'Gambaran posisi keuangan saat ini setelah seluruh transaksi dihitung.'

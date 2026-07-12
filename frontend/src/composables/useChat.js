@@ -3,15 +3,19 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { sendChat, sendChatImage } from '../services/api'
 
 function isRecordedTransaction(data) {
+  if (Array.isArray(data)) {
+    return data.length > 0 && typeof data[0] === 'object' && 'id' in data[0]
+  }
   return Boolean(data && typeof data === 'object' && 'id' in data && 'type' in data)
 }
 
-export function useChat(onTransactionAdded = () => {}) {
+export function useChat(onTransactionAdded = () => {}, onRequiresFundSource = () => {}) {
   const messages = ref([
     {
       role: 'bot',
-      text: 'Selamat datang. Saya siap membantu mencatat transaksi dan merangkum keuangan Anda.',
+      text: 'Selamat datang. Saya siap membantu mencatat transaksi, menambah sumber uang, dan merangkum keuangan Anda.',
       hasTransaction: false,
+      hasFundSource: false,
     },
   ])
   const isLoading = ref(false)
@@ -32,11 +36,12 @@ export function useChat(onTransactionAdded = () => {}) {
     }
   }
 
-  function appendBotMessage(text, hasTransaction = false) {
+  function appendBotMessage(text, hasTransaction = false, hasFundSource = false) {
     messages.value.push({
       role: 'bot',
       text,
       hasTransaction,
+      hasFundSource,
     })
   }
 
@@ -57,7 +62,7 @@ export function useChat(onTransactionAdded = () => {}) {
     imagePreview.value = URL.createObjectURL(file)
   }
 
-  async function sendTextMessage(message) {
+  async function sendTextMessage(message, fundSources = []) {
     const trimmedMessage = message.trim()
     if (!trimmedMessage || isLoading.value) {
       return
@@ -68,20 +73,37 @@ export function useChat(onTransactionAdded = () => {}) {
       role: 'user',
       text: trimmedMessage,
       hasTransaction: false,
+      hasFundSource: false,
     })
     draftMessage.value = ''
     isLoading.value = true
 
     try {
-      const response = await sendChat(trimmedMessage, requestHistory)
-      const hasTransaction = isRecordedTransaction(response.data)
+      const response = await sendChat(trimmedMessage, requestHistory, fundSources)
+      
+      if (response.requires_fund_source) {
+        onRequiresFundSource(response.pending_transactions, response.reply)
+        appendBotMessage(response.reply || 'Pilih sumber uang untuk transaksi Anda.')
+        return
+      }
+
+      const hasTransaction = isRecordedTransaction(response.data) && response.action !== 'add_fund_source_success'
+      const hasFundSource = response.action === 'add_fund_source_success'
 
       appendBotMessage(
         response.reply || 'Permintaan Anda sudah saya proses.',
-        hasTransaction
+        hasTransaction,
+        hasFundSource
       )
 
-      if (hasTransaction) {
+      if (response.action === 'update_greeting_success') {
+        const newGreeting = response.data?.greeting
+        if (newGreeting) {
+          localStorage.setItem('auth_greeting', newGreeting)
+        }
+      }
+
+      if (hasTransaction || hasFundSource) {
         onTransactionAdded(response.data)
       }
     } catch (error) {
@@ -106,20 +128,23 @@ export function useChat(onTransactionAdded = () => {}) {
       role: 'user',
       text: messageText,
       hasTransaction: false,
+      hasFundSource: false,
     })
     draftMessage.value = ''
     isLoading.value = true
 
     try {
       const response = await sendChatImage(file, trimmedMessage)
-      const hasTransaction = isRecordedTransaction(response.data)
+      const hasTransaction = isRecordedTransaction(response.data) && response.action !== 'add_fund_source_success'
+      const hasFundSource = response.action === 'add_fund_source_success'
 
       appendBotMessage(
         response.reply || 'Gambar sudah saya proses.',
-        hasTransaction
+        hasTransaction,
+        hasFundSource
       )
 
-      if (hasTransaction) {
+      if (hasTransaction || hasFundSource) {
         onTransactionAdded(response.data)
       }
     } catch (error) {
@@ -131,13 +156,13 @@ export function useChat(onTransactionAdded = () => {}) {
     }
   }
 
-  async function submitCurrentInput() {
+  async function submitCurrentInput(fundSources = []) {
     if (selectedImageFile.value) {
       await sendImageMessage(selectedImageFile.value, draftMessage.value)
       return
     }
 
-    await sendTextMessage(draftMessage.value)
+    await sendTextMessage(draftMessage.value, fundSources)
   }
 
   onBeforeUnmount(() => {
