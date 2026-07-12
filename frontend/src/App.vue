@@ -1,11 +1,26 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 
-import ChatBox from './components/ChatBox.vue'
-import QuickAdd from './components/QuickAdd.vue'
-import SummaryCards from './components/SummaryCards.vue'
-import TransactionHistory from './components/TransactionHistory.vue'
+import AppShell from './components/AppShell.vue'
+import LoginPage from './components/LoginPage.vue'
+import { getFullName, getNickname } from './services/auth'
+import { useAuth } from './composables/useAuth'
 import { useTransactions } from './composables/useTransactions'
+import AddTransactionPage from './views/AddTransactionPage.vue'
+import DashboardPage from './views/DashboardPage.vue'
+import HistoryPage from './views/HistoryPage.vue'
+import SettingsPage from './views/SettingsPage.vue'
+import StatisticsPage from './views/StatisticsPage.vue'
+import BudgetPage from './views/BudgetPage.vue'
+
+const { isLoggedIn, fullName, nickname, logout } = useAuth()
+const currentPage = ref('dashboard')
+const selectedStatType = ref('expense')
+
+function handleNavigateStats(type) {
+  selectedStatType.value = type
+  currentPage.value = 'statistics'
+}
 
 const {
   transactions,
@@ -18,43 +33,76 @@ const {
   setMonth,
 } = useTransactions()
 
-onMounted(fetchAll)
+onMounted(() => {
+  if (isLoggedIn.value) {
+    fetchAll()
+  }
+})
+
+function handleLoggedIn() {
+  isLoggedIn.value = true
+  fullName.value = getFullName()
+  nickname.value = getNickname()
+  fetchAll()
+}
+
+function handleLogout() {
+  logout()
+  currentPage.value = 'dashboard'
+}
 </script>
 
 <template>
-  <main class="min-h-screen bg-gray-50">
-    <header class="w-full bg-white shadow-sm">
-      <div class="mx-auto max-w-4xl px-4 py-5">
-        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
-          💼 AI-Powered Financial Notes Chatbot
-        </h1>
-        <p class="mt-1 text-sm text-slate-600">
-          Asisten keuangan pribadi untuk mencatat transaksi dan memantau ringkasan bulanan.
-        </p>
-      </div>
-    </header>
+  <!-- Auth gate: show login page when not authenticated -->
+  <LoginPage v-if="!isLoggedIn" @logged-in="handleLoggedIn" />
 
-    <div class="mx-auto max-w-4xl space-y-6 px-4 py-6">
-      <SummaryCards
-        :balance="summary.balance"
-        :income="summary.income"
-        :expense="summary.expense"
-      />
+  <!-- Main layout shell: shown when authenticated -->
+  <AppShell
+    v-else
+    :current-page="currentPage"
+    :full-name="fullName || ''"
+    :nickname="nickname || ''"
+    :balance="summary.balance"
+    @navigate="currentPage = $event"
+    @logout="handleLogout"
+  >
+    <!-- View Switcher -->
+    <DashboardPage
+      v-if="currentPage === 'dashboard'"
+      :balance="summary.balance"
+      :income="summary.income"
+      :expense="summary.expense"
+      :nickname="nickname || ''"
+      @refresh="fetchAll"
+      @navigate-stats="handleNavigateStats"
+    />
 
-      <ChatBox @transaction-added="fetchAll" />
+    <AddTransactionPage
+      v-else-if="currentPage === 'add'"
+      :create-transaction="createTransaction"
+      @transaction-added="fetchAll"
+    />
 
-      <QuickAdd
-        :create-transaction="createTransaction"
-        @transaction-added="fetchAll"
-      />
+    <HistoryPage
+      v-else-if="currentPage === 'history'"
+      :transactions="transactions"
+      :loading="loading"
+      :selected-month="selectedMonth"
+      @month-changed="setMonth"
+      @delete-transaction="deleteTransaction"
+    />
 
-      <TransactionHistory
-        :transactions="transactions"
-        :loading="loading"
-        :selected-month="selectedMonth"
-        @month-changed="setMonth"
-        @delete-transaction="deleteTransaction"
-      />
-    </div>
-  </main>
+    <StatisticsPage
+      v-else-if="currentPage === 'statistics'"
+      :initial-type="selectedStatType"
+    />
+    
+    <SettingsPage
+      v-else-if="currentPage === 'settings'"
+    />
+    
+    <BudgetPage
+      v-else-if="currentPage === 'budget'"
+    />
+  </AppShell>
 </template>

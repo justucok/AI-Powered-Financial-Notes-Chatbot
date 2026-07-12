@@ -6,6 +6,10 @@ const props = defineProps({
     type: Function,
     required: true,
   },
+  fundSources: {
+    type: Array,
+    default: () => [],
+  }
 })
 
 const emit = defineEmits({
@@ -19,12 +23,14 @@ const amount = ref('')
 const category = ref('')
 const description = ref('')
 const date = ref(today)
+const fundSourceId = ref('')
 const submitting = ref(false)
 const successVisible = ref(false)
 const errors = ref({
   type: '',
   amount: '',
   category: '',
+  fundSourceId: '',
 })
 
 const expenseCategories = [
@@ -62,11 +68,18 @@ watch(type, () => {
   }
 })
 
+watch(() => props.fundSources, (sources) => {
+  if (sources && sources.length > 0 && !fundSourceId.value) {
+    fundSourceId.value = sources[0].id
+  }
+}, { immediate: true })
+
 function resetErrors() {
   errors.value = {
     type: '',
     amount: '',
     category: '',
+    fundSourceId: '',
   }
 }
 
@@ -76,6 +89,7 @@ function resetForm() {
   category.value = ''
   description.value = ''
   date.value = today
+  fundSourceId.value = props.fundSources?.length ? props.fundSources[0].id : ''
 }
 
 function validateForm() {
@@ -97,6 +111,11 @@ function validateForm() {
     isValid = false
   }
 
+  if (!fundSourceId.value) {
+    errors.value.fundSourceId = 'Sumber uang wajib dipilih.'
+    isValid = false
+  }
+
   return isValid
 }
 
@@ -115,6 +134,7 @@ async function handleSubmit() {
       category: category.value.trim(),
       description: description.value.trim() || null,
       date: date.value,
+      fund_source_id: fundSourceId.value,
     }
 
     const result = await props.createTransaction(payload)
@@ -224,13 +244,29 @@ async function handleSubmit() {
         >
       </label>
 
-      <div class="md:col-span-2 xl:col-span-5">
+      <label class="space-y-2">
+        <span class="text-sm font-medium text-slate-700">Sumber Uang</span>
+        <select
+          v-model="fundSourceId"
+          class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+        >
+          <option value="" disabled>Pilih Sumber Uang</option>
+          <option v-for="source in fundSources" :key="source.id" :value="source.id">
+            {{ source.icon }} {{ source.name }}
+          </option>
+        </select>
+        <p v-if="errors.fundSourceId" class="text-xs text-rose-600">
+          {{ errors.fundSourceId }}
+        </p>
+      </label>
+
+      <div class="md:col-span-2 xl:col-span-1 flex items-end">
         <button
           type="submit"
           :disabled="submitting"
-          class="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-300"
+          class="h-12 w-full inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-300"
         >
-          {{ submitting ? 'Menyimpan...' : 'Tambah Transaksi' }}
+          {{ submitting ? 'Menyimpan...' : 'Tambah' }}
         </button>
       </div>
     </form>

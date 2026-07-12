@@ -52,6 +52,7 @@ async def create(db: AsyncSession, data: TransactionCreate) -> Transaction:
         category=data.category,
         description=data.description,
         date=data.date,
+        fund_source_id=data.fund_source_id,
     )
     db.add(transaction)
     await db.commit()

@@ -8,5 +8,6 @@ class ChatMessageRequest(BaseModel):
 
     message: str = Field(min_length=1)
     history: list[dict[str, Any]] = Field(default_factory=list)
+    fund_sources: list[dict[str, Any]] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
