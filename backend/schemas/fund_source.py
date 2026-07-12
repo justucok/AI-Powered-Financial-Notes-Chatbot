@@ -24,3 +24,9 @@ class FundSourceResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AdjustBalanceRequest(BaseModel):
+    """Payload for adjusting fund source balance to a target value."""
+    
+    target_balance: float = Field(ge=0, description="Saldo yang diinginkan setelah penyesuaian")

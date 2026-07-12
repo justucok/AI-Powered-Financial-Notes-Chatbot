@@ -88,6 +88,7 @@ export function useChat(onTransactionAdded = () => {}, onRequiresFundSource = ()
 
       const hasTransaction = isRecordedTransaction(response.data) && response.action !== 'add_fund_source_success'
       const hasFundSource = response.action === 'add_fund_source_success'
+      const hasAdjustment = response.action === 'adjust_balance_success'
 
       appendBotMessage(
         response.reply || 'Permintaan Anda sudah saya proses.',
@@ -102,7 +103,7 @@ export function useChat(onTransactionAdded = () => {}, onRequiresFundSource = ()
         }
       }
 
-      if (hasTransaction || hasFundSource) {
+      if (hasTransaction || hasFundSource || hasAdjustment) {
         onTransactionAdded(response.data)
       }
     } catch (error) {

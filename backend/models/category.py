@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, String, func
+from sqlalchemy import CheckConstraint, DateTime, String, func, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 try:

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 try:
     from backend.config import get_settings
-    from backend.database import close_auth_db, init_auth_db
+    from backend.database import close_db, init_db
     from backend.models import transaction, user  # noqa: F401 — registers ORM models
     from backend.routers.auth import router as auth_router
     from backend.routers.chat import router as chat_router
@@ -17,7 +17,7 @@ try:
     from backend.services.gemini_service import close_gemini_client
 except ModuleNotFoundError:
     from config import get_settings
-    from database import close_auth_db, init_auth_db
+    from database import close_db, init_db
     from models import transaction, user  # noqa: F401
     from routers.auth import router as auth_router
     from routers.chat import router as chat_router
@@ -35,13 +35,13 @@ settings = get_settings()
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Initialize and dispose shared resources for the application."""
 
-    # Initialize the public auth-registry database
-    await init_auth_db()
+    # Initialize the public database
+    await init_db()
     try:
         yield
     finally:
         await close_gemini_client()
-        await close_auth_db()
+        await close_db()
 
 
 def create_app() -> FastAPI:
