@@ -9,7 +9,7 @@ import { useBudget } from '../composables/useBudget'
 
 const { logout } = useAuth()
 const { profile, loading: profileLoading, error: profileError, successMessage, fetchProfile, updatePassword, updateProfileDetails, removeAccount, clearMessages } = useSettings()
-const { sources, loading: sourceLoading, error: sourceError, fetchSources, addSource, removeSource } = useFundSources()
+const { sources, loading: sourceLoading, error: sourceError, fetchSources, addSource, removeSource, adjustBalance } = useFundSources()
 const { categories, loading: categoryLoading, fetchCategories, createCategory, deleteCategory } = useCategories()
 const { summary: budgetSummary, fetchBudgetSummary, updateBudget, updateCategoryBudget, loading: budgetLoading } = useBudget()
 
@@ -163,6 +163,31 @@ async function handleAddCategory() {
   await createCategory({ ...newCategory.value })
   newCategory.value = { name: '', type: 'expense', icon: '' }
 }
+
+const editingSourceId = ref(null)
+const editTargetBalance = ref(0)
+
+const currentEditSource = computed(() =>
+  sources.value.find(s => s.id === editingSourceId.value)
+)
+const balanceDelta = computed(() => {
+  if (!currentEditSource.value) return 0
+  return editTargetBalance.value - currentEditSource.value.balance
+})
+
+function startEditBalance(source) {
+  editingSourceId.value = source.id
+  editTargetBalance.value = source.balance
+}
+
+async function handleAdjustBalance() {
+  const result = await adjustBalance(editingSourceId.value, editTargetBalance.value)
+  if (!sourceError.value) {
+    editingSourceId.value = null
+    successMessage.value = result.message || 'Saldo berhasil disesuaikan.'
+  }
+}
+
 </script>
 
 <template>
@@ -386,25 +411,82 @@ async function handleAddCategory() {
               </div>
               <div v-else class="space-y-3">
                 <div v-for="source in sources" :key="source.id" 
-                     class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-2xl">{{ source.icon || '💰' }}</span>
-                    <div>
-                      <p class="font-bold text-gray-900">{{ source.name }}</p>
-                      <p class="text-xs text-gray-500 capitalize">{{ source.type }}</p>
+                     class="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                  
+                  <!-- Normal View -->
+                  <div v-if="editingSourceId !== source.id" class="flex items-center justify-between p-4">
+                    <div class="flex items-center space-x-3">
+                      <span class="text-2xl">{{ source.icon || '💰' }}</span>
+                      <div>
+                        <p class="font-bold text-gray-900">{{ source.name }}</p>
+                        <p class="text-xs text-gray-500 capitalize">{{ source.type }}</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                      <div class="text-right">
+                        <p class="text-xs text-gray-500">Saldo</p>
+                        <p class="font-bold text-blue-600">{{ formatRupiah(source.balance) }}</p>
+                      </div>
+                      <div class="flex items-center border-l border-gray-200 pl-4 space-x-1">
+                        <button @click="startEditBalance(source)" 
+                                class="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Ubah Saldo">
+                          ✏️
+                        </button>
+                        <button @click="removeSource(source.id)" 
+                                class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Hapus Sumber Uang">
+                          🗑️
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div class="flex items-center space-x-4">
-                    <div class="text-right">
-                      <p class="text-xs text-gray-500">Saldo</p>
-                      <p class="font-bold text-blue-600">{{ formatRupiah(source.balance) }}</p>
+
+                  <!-- Edit View -->
+                  <div v-else class="p-4 bg-white border-b-2 border-blue-500">
+                    <div class="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-100">
+                      <span class="text-2xl">{{ source.icon || '💰' }}</span>
+                      <div>
+                        <p class="font-bold text-gray-900">{{ source.name }}</p>
+                        <p class="text-xs text-gray-500 capitalize">Saldo Saat Ini: {{ formatRupiah(source.balance) }}</p>
+                      </div>
                     </div>
-                    <button @click="removeSource(source.id)" 
-                            class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Hapus Sumber Uang">
-                      🗑️
-                    </button>
+                    
+                    <div class="mb-4">
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Ubah Saldo Menjadi</label>
+                      <input v-model.number="editTargetBalance" type="number" step="1" required
+                             class="w-full rounded-lg border-gray-300 bg-gray-50 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 font-mono text-lg">
+                    </div>
+
+                    <div class="p-3 rounded-lg text-sm mb-4"
+                         :class="{
+                           'bg-gray-50 text-gray-600': balanceDelta === 0,
+                           'bg-green-50 text-green-700': balanceDelta > 0,
+                           'bg-red-50 text-red-700': balanceDelta < 0
+                         }">
+                      <div v-if="balanceDelta === 0">ℹ️ Tidak ada perubahan saldo diperlukan.</div>
+                      <div v-else-if="balanceDelta > 0">
+                        ⬆️ Selisih: <strong>+{{ formatRupiah(balanceDelta) }}</strong><br>
+                        <span class="text-xs opacity-90">Akan dibuat transaksi <strong>INCOME</strong> secara otomatis (Adjustment).</span>
+                      </div>
+                      <div v-else>
+                        ⬇️ Selisih: <strong>-{{ formatRupiah(Math.abs(balanceDelta)) }}</strong><br>
+                        <span class="text-xs opacity-90">Akan dibuat transaksi <strong>EXPENSE</strong> secara otomatis (Adjustment).</span>
+                      </div>
+                    </div>
+
+                    <div class="flex gap-2 justify-end">
+                      <button @click="editingSourceId = null" 
+                              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                        Batal
+                      </button>
+                      <button @click="handleAdjustBalance" :disabled="sourceLoading"
+                              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                        Simpan Perubahan
+                      </button>
+                    </div>
                   </div>
+
                 </div>
               </div>
             </div>

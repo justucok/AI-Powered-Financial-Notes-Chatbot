@@ -9,13 +9,13 @@ try:
     from backend.schemas.transaction import TransactionCreate, TransactionResponse
     from backend.schemas.fund_source import FundSourceCreate
     from backend.schemas.budget import BudgetCreate, CategoryBudgetCreate
-    from backend.services import gemini_service, category_service, budget_service
+    from backend.services import gemini_service, category_service, budget_service, fund_source_service
 except ModuleNotFoundError:
     from repositories import transaction_repository, fund_source_repository
     from schemas.transaction import TransactionCreate, TransactionResponse
     from schemas.fund_source import FundSourceCreate
     from schemas.budget import BudgetCreate, CategoryBudgetCreate
-    from services import gemini_service, category_service, budget_service
+    from services import gemini_service, category_service, budget_service, fund_source_service
 
 
 def _format_summary_reply(month: str, total_income: float, total_expense: float, balance: float) -> str:
@@ -269,6 +269,32 @@ async def handle_text_message(
                 return {
                     "reply": "Maaf, nominal atau format anggaran kategori tidak valid."
                 }
+
+    if result.get("action") == "adjust_balance":
+        source_name = result.get("fund_source_name")
+        target_balance = result.get("target_balance")
+        if source_name and target_balance is not None:
+            source_id = _find_source_id(fund_sources, source_name)
+            if source_id:
+                try:
+                    res = await fund_source_service.adjust_balance(db, user_id, source_id, float(target_balance))
+                    reply = result.get("reply", res["message"])
+                    return {
+                        "action": "adjust_balance_success",
+                        "reply": reply,
+                        "data": res
+                    }
+                except ValueError as exc:
+                    logger = logging.getLogger(__name__)
+                    logger.warning("Failed to adjust balance: %s", str(exc))
+            else:
+                return {
+                    "reply": f"Maaf, saya tidak menemukan sumber uang dengan nama '{source_name}'. Pastikan ejaannya benar atau tambahkan terlebih dahulu."
+                }
+        else:
+            return {
+                "reply": "Maaf, nama sumber uang atau nominal penyesuaian saldo tidak terdeteksi dengan jelas."
+            }
 
     if result.get("action") == "update_greeting":
         new_greeting = result.get("greeting")
