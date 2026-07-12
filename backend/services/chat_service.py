@@ -9,13 +9,13 @@ try:
     from backend.schemas.transaction import TransactionCreate, TransactionResponse
     from backend.schemas.fund_source import FundSourceCreate
     from backend.schemas.budget import BudgetCreate, CategoryBudgetCreate
-    from backend.services import gemini_service, category_service, budget_service, fund_source_service
+    from backend.services import gemini_service, category_service, budget_service, fund_source_service, pdf_service
 except ModuleNotFoundError:
     from repositories import transaction_repository, fund_source_repository
     from schemas.transaction import TransactionCreate, TransactionResponse
     from schemas.fund_source import FundSourceCreate
     from schemas.budget import BudgetCreate, CategoryBudgetCreate
-    from services import gemini_service, category_service, budget_service, fund_source_service
+    from services import gemini_service, category_service, budget_service, fund_source_service, pdf_service
 
 
 def _format_summary_reply(month: str, total_income: float, total_expense: float, balance: float) -> str:
@@ -381,3 +381,59 @@ async def handle_image_message(
     return {
         "reply": result.get("reply", "Maaf, transaksi tidak dapat diekstrak dari gambar tersebut."),
     }
+
+
+async def handle_pdf_statement(
+    db: AsyncSession,
+    pdf_bytes: bytes,
+    password: str,
+    fund_sources: list[dict[str, Any]] | None = None,
+    current_user: Any = None,
+) -> dict[str, Any]:
+    """Dekripsi PDF e-statement, ekstrak transaksi via Gemini, kembalikan pending transactions.
+
+    Args:
+        pdf_bytes: Konten file PDF dalam bytes.
+        password: Password proteksi PDF.
+        fund_sources: Daftar sumber uang pengguna.
+        current_user: Data token JWT pengguna.
+
+    Returns:
+        Dict berisi pending_transactions untuk dikonfirmasi user atau pesan error.
+    """
+    user_id = int(current_user.sub) if current_user else None
+
+    # 1. Dekripsi dan ekstrak teks
+    try:
+        pdf_text = pdf_service.decrypt_and_extract_text(pdf_bytes, password)
+    except ValueError as exc:
+        return {"reply": str(exc)}
+
+    # 2. Kirim ke Gemini
+    categories = await category_service.get_categories(db, user_id)
+    nickname = current_user.nickname if current_user else None
+    greeting = current_user.preferred_greeting if current_user else None
+
+    result = await gemini_service.process_pdf_statement(pdf_text, nickname, greeting, categories)
+
+    # 3. Proses hasil (sama seperti handle_image_message)
+    if result.get("is_transaction") and result.get("transactions"):
+        processed = []
+        for tx_item in result["transactions"]:
+            try:
+                tx_data = _normalize_transaction_payload(tx_item)
+                tx_data["fund_source_id"] = None
+                processed.append(tx_data)
+            except (KeyError, TypeError, ValidationError):
+                pass
+
+        if not processed:
+            return {"reply": "Tidak ada transaksi yang berhasil diekstrak dari e-statement Anda."}
+
+        return {
+            "reply": result.get("reply", f"Berhasil mengekstrak {len(processed)} transaksi dari e-statement."),
+            "requires_fund_source": True,
+            "pending_transactions": processed,
+        }
+
+    return {"reply": result.get("reply", "Tidak ada transaksi yang berhasil diekstrak dari e-statement Anda.")}

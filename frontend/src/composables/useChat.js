@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 
-import { sendChat, sendChatImage } from '../services/api'
+import { sendChat, sendChatImage, sendChatPdf } from '../services/api'
 
 function isRecordedTransaction(data) {
   if (Array.isArray(data)) {
@@ -162,6 +162,50 @@ export function useChat(onTransactionAdded = () => {}, onRequiresFundSource = ()
     }
   }
 
+  async function sendPdfMessage(file, password) {
+    if (!file || isLoading.value) {
+      return
+    }
+
+    messages.value.push({
+      role: 'user',
+      text: `Mengirim E-Statement: ${file.name}`,
+      hasTransaction: false,
+      hasFundSource: false,
+    })
+    draftMessage.value = ''
+    isLoading.value = true
+
+    try {
+      const response = await sendChatPdf(file, password)
+      
+      if (response.requires_fund_source) {
+        onRequiresFundSource(response.pending_transactions, response.reply)
+        return
+      }
+
+      const hasTransaction = isRecordedTransaction(response.data) && response.action !== 'add_fund_source_success'
+      const hasFundSource = response.action === 'add_fund_source_success'
+
+      appendBotMessage(
+        response.reply || 'E-Statement sudah saya proses.',
+        hasTransaction,
+        hasFundSource
+      )
+
+      if (hasTransaction || hasFundSource) {
+        onTransactionAdded(response.data)
+      }
+    } catch (error) {
+      console.error('Failed to send PDF message:', error)
+      const errorMsg = error.response?.data?.detail || error.response?.data?.reply || 'Maaf, e-statement gagal diproses. Pastikan password benar.'
+      appendBotMessage(errorMsg)
+    } finally {
+      isLoading.value = false
+      clearImage()
+    }
+  }
+
   async function submitCurrentInput(fundSources = []) {
     if (selectedImageFile.value) {
       await sendImageMessage(selectedImageFile.value, draftMessage.value)
@@ -184,6 +228,7 @@ export function useChat(onTransactionAdded = () => {}, onRequiresFundSource = ()
     selectedImageFile,
     sendTextMessage,
     sendImageMessage,
+    sendPdfMessage,
     selectImage,
     clearImage,
     submitCurrentInput,

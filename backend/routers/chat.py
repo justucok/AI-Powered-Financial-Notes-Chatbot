@@ -74,3 +74,40 @@ async def post_chat_image(
         current_user=current_user,
     )
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)
+
+
+@router.post("/chat/pdf")
+async def post_chat_pdf(
+    file: UploadFile = File(...),
+    password: Annotated[str, Form()] = "",
+    fund_sources: Annotated[str, Form()] = "[]",
+    current_user: TokenPayload = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> JSONResponse:
+    """Proses e-statement PDF berpassword dan ekstrak transaksi."""
+    if not file.content_type or file.content_type != "application/pdf":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="File harus berformat PDF.",
+        )
+    if not password.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Password PDF wajib diisi.",
+        )
+
+    import json
+    try:
+        fund_sources_list = json.loads(fund_sources)
+    except Exception:
+        fund_sources_list = []
+
+    pdf_bytes = await file.read()
+    result = await chat_service.handle_pdf_statement(
+        db=db,
+        pdf_bytes=pdf_bytes,
+        password=password.strip(),
+        fund_sources=fund_sources_list,
+        current_user=current_user,
+    )
+    return JSONResponse(status_code=status.HTTP_200_OK, content=result)
