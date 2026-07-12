@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(
         validation_alias=AliasChoices("GEMINI_API_KEY"),
     )
+    database_url: str = Field(
+        validation_alias=AliasChoices("DATABASE_URL"),
+    )
+    allowed_origins: str = Field(
+        default="*",
+        validation_alias=AliasChoices("ALLOWED_ORIGINS"),
+    )
     smtp_server: str = Field(
         default="smtp.gmail.com",
         validation_alias=AliasChoices("SMTP_SERVER"),

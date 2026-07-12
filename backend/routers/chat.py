@@ -5,28 +5,26 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 try:
-    from backend.dependencies.auth import get_current_user, get_db_for_current_user
+    from backend.database import get_db
+    from backend.dependencies.auth import get_current_user
     from backend.schemas.auth import TokenPayload
     from backend.schemas.chat import ChatMessageRequest
     from backend.services import chat_service
-    from backend.database import get_auth_db
 except ModuleNotFoundError:
-    from dependencies.auth import get_current_user, get_db_for_current_user
+    from database import get_db
+    from dependencies.auth import get_current_user
     from schemas.auth import TokenPayload
     from schemas.chat import ChatMessageRequest
     from services import chat_service
-    from database import get_auth_db
 
 
 router = APIRouter(tags=["chat"])
 
 
-@router.post("/chat")
 async def post_chat(
     payload: ChatMessageRequest,
     current_user: TokenPayload = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_for_current_user),
-    auth_db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
     """Handle text chat requests (authenticated user with nickname preference)."""
 
@@ -37,7 +35,6 @@ async def post_chat(
         nickname=current_user.nickname,
         greeting=current_user.preferred_greeting,
         fund_sources=payload.fund_sources,
-        auth_db=auth_db,
         current_user=current_user,
     )
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)
@@ -49,7 +46,7 @@ async def post_chat_image(
     message: Annotated[str, Form()] = "",
     fund_sources: Annotated[str, Form()] = "[]",
     current_user: TokenPayload = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db_for_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
     """Handle image chat requests (authenticated user with nickname preference)."""
 
@@ -74,5 +71,6 @@ async def post_chat_image(
         nickname=current_user.nickname,
         greeting=current_user.preferred_greeting,
         fund_sources=fund_sources_list,
+        current_user=current_user,
     )
     return JSONResponse(status_code=status.HTTP_200_OK, content=result)

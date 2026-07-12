@@ -22,15 +22,15 @@ except ModuleNotFoundError:
     )
 
 
-async def get_summary(db: AsyncSession, month: str) -> BudgetSummaryResponse:
+async def get_summary(db: AsyncSession, user_id: int, month: str) -> BudgetSummaryResponse:
     """Calculate the real-time budget vs actual expenses for the month."""
     # 1. Fetch the budget constraints
-    budget_entity = await budget_repository.get_budget(db, month)
+    budget_entity = await budget_repository.get_budget(db, user_id, month)
     total_budget = budget_entity.amount if budget_entity else 0.0
     category_budgets = budget_entity.category_budgets if budget_entity else []
 
     # 2. Fetch actual transactions for the month
-    transactions = await transaction_repository.get_all(db, month)
+    transactions = await transaction_repository.get_all(db, user_id, month)
     
     # 3. Calculate actuals
     # Only "expense" type matters for budget tracking
@@ -74,13 +74,13 @@ async def get_summary(db: AsyncSession, month: str) -> BudgetSummaryResponse:
     )
 
 
-async def set_budget(db: AsyncSession, data: BudgetCreate) -> BudgetResponse:
+async def set_budget(db: AsyncSession, user_id: int, data: BudgetCreate) -> BudgetResponse:
     """Set or update the overall monthly budget."""
-    budget = await budget_repository.upsert_budget(db, data)
+    budget = await budget_repository.upsert_budget(db, user_id, data)
     return BudgetResponse.model_validate(budget)
 
 
-async def set_category_budget(db: AsyncSession, data: CategoryBudgetCreate) -> CategoryBudgetResponse:
+async def set_category_budget(db: AsyncSession, user_id: int, data: CategoryBudgetCreate) -> CategoryBudgetResponse:
     """Set or update a specific category budget for a month."""
-    cb = await budget_repository.upsert_category_budget(db, data)
+    cb = await budget_repository.upsert_category_budget(db, user_id, data)
     return CategoryBudgetResponse.model_validate(cb)

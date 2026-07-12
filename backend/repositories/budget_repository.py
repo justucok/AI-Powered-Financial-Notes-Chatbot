@@ -9,19 +9,19 @@ except ModuleNotFoundError:
     from schemas.budget import BudgetCreate, CategoryBudgetCreate
 
 
-async def get_budget(db: AsyncSession, month: str) -> Budget | None:
+async def get_budget(db: AsyncSession, user_id: int, month: str) -> Budget | None:
     """Retrieve the global budget (ignores specific month parameter)."""
-    statement = select(Budget).where(Budget.month == "ALL")
+    statement = select(Budget).where(Budget.user_id == user_id, Budget.month == "ALL")
     result = await db.execute(statement)
     return result.scalar_one_or_none()
 
 
-async def upsert_budget(db: AsyncSession, data: BudgetCreate) -> Budget:
+async def upsert_budget(db: AsyncSession, user_id: int, data: BudgetCreate) -> Budget:
     """Create or update the overall global budget."""
-    budget = await get_budget(db, "ALL")
+    budget = await get_budget(db, user_id, "ALL")
     
     if budget is None:
-        budget = Budget(month="ALL", amount=data.amount)
+        budget = Budget(user_id=user_id, month="ALL", amount=data.amount)
         db.add(budget)
     else:
         budget.amount = data.amount
@@ -31,12 +31,12 @@ async def upsert_budget(db: AsyncSession, data: BudgetCreate) -> Budget:
     return budget
 
 
-async def upsert_category_budget(db: AsyncSession, data: CategoryBudgetCreate) -> CategoryBudget:
+async def upsert_category_budget(db: AsyncSession, user_id: int, data: CategoryBudgetCreate) -> CategoryBudget:
     """Create or update a category budget globally."""
     # Ensure the parent budget exists first
-    budget = await get_budget(db, "ALL")
+    budget = await get_budget(db, user_id, "ALL")
     if budget is None:
-        budget = Budget(month="ALL", amount=0.0)
+        budget = Budget(user_id=user_id, month="ALL", amount=0.0)
         db.add(budget)
         await db.flush()  # To get the budget ID
     
@@ -50,6 +50,7 @@ async def upsert_category_budget(db: AsyncSession, data: CategoryBudgetCreate) -
     
     if category_budget is None:
         category_budget = CategoryBudget(
+            user_id=user_id,
             budget_id=budget.id,
             category_name=data.category_name,
             amount=data.amount

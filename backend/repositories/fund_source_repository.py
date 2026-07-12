@@ -12,7 +12,7 @@ except ModuleNotFoundError:
     from schemas.fund_source import FundSourceCreate
 
 
-async def get_all_with_balance(db: AsyncSession) -> list[dict]:
+async def get_all_with_balance(db: AsyncSession, user_id: int) -> list[dict]:
     """Return all fund sources with computed real-time balance.
     balance = initial_balance + SUM(income) - SUM(expense)
     """
@@ -30,7 +30,7 @@ async def get_all_with_balance(db: AsyncSession) -> list[dict]:
                 0.0,
             ).label("total_expense"),
         )
-        .where(Transaction.fund_source_id.is_not(None))
+        .where(Transaction.fund_source_id.is_not(None), Transaction.user_id == user_id)
         .group_by(Transaction.fund_source_id)
         .subquery()
     )
@@ -40,7 +40,9 @@ async def get_all_with_balance(db: AsyncSession) -> list[dict]:
         FundSource,
         tx_sum_stmt.c.total_income,
         tx_sum_stmt.c.total_expense,
-    ).outerjoin(tx_sum_stmt, FundSource.id == tx_sum_stmt.c.fund_source_id)
+    ).outerjoin(tx_sum_stmt, FundSource.id == tx_sum_stmt.c.fund_source_id).where(
+        FundSource.user_id == user_id
+    )
 
     result = await db.execute(stmt)
     rows = result.all()
@@ -65,9 +67,10 @@ async def get_all_with_balance(db: AsyncSession) -> list[dict]:
     return fund_sources
 
 
-async def create(db: AsyncSession, data: FundSourceCreate) -> FundSource:
+async def create(db: AsyncSession, user_id: int, data: FundSourceCreate) -> FundSource:
     """Persist a new fund source and return the saved entity."""
     fund_source = FundSource(
+        user_id=user_id,
         name=data.name,
         type=data.type,
         icon=data.icon,
@@ -79,9 +82,10 @@ async def create(db: AsyncSession, data: FundSourceCreate) -> FundSource:
     return fund_source
 
 
-async def delete(db: AsyncSession, id: int) -> FundSource | None:
+async def delete(db: AsyncSession, user_id: int, id: int) -> FundSource | None:
     """Delete a fund source by id and return the removed entity when found."""
-    fund_source = await db.get(FundSource, id)
+    statement = select(FundSource).where(FundSource.id == id, FundSource.user_id == user_id)
+    fund_source = await db.scalar(statement)
     if fund_source is None:
         return None
 
@@ -90,6 +94,7 @@ async def delete(db: AsyncSession, id: int) -> FundSource | None:
     return fund_source
 
 
-async def get_by_id(db: AsyncSession, id: int) -> FundSource | None:
+async def get_by_id(db: AsyncSession, user_id: int, id: int) -> FundSource | None:
     """Get a fund source by id."""
-    return await db.get(FundSource, id)
+    statement = select(FundSource).where(FundSource.id == id, FundSource.user_id == user_id)
+    return await db.scalar(statement)

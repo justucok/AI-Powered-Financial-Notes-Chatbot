@@ -42,7 +42,6 @@ class TokenPayload(BaseModel):
     full_name: str
     nickname: str
     preferred_greeting: str
-    db_path: str      # absolute path to the user's personal database
 
     model_config = ConfigDict(from_attributes=True)
 

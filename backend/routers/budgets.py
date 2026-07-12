@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 try:
-    from backend.dependencies.auth import get_db_for_current_user
+    from backend.database import get_db
+    from backend.dependencies.auth import get_current_user
+    from backend.schemas.auth import TokenPayload
     from backend.schemas.budget import (
         BudgetCreate,
         BudgetResponse,
@@ -15,7 +17,9 @@ try:
     )
     from backend.services import budget_service
 except ModuleNotFoundError:
-    from dependencies.auth import get_db_for_current_user
+    from database import get_db
+    from dependencies.auth import get_current_user
+    from schemas.auth import TokenPayload
     from schemas.budget import (
         BudgetCreate,
         BudgetResponse,
@@ -32,7 +36,8 @@ router = APIRouter(tags=["budgets"])
 @router.get("/budgets/summary", response_model=BudgetSummaryResponse)
 async def get_budget_summary(
     month: Annotated[str, Query(description="Month to retrieve budget summary for (YYYY-MM)")],
-    db: AsyncSession = Depends(get_db_for_current_user),
+    db: AsyncSession = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
 ) -> BudgetSummaryResponse:
     """Retrieve the budget summary (budget vs actual expenses) for a specific month."""
     
@@ -42,7 +47,7 @@ async def get_budget_summary(
             detail="Month must be in YYYY-MM format",
         )
 
-    return await budget_service.get_summary(db, month)
+    return await budget_service.get_summary(db, int(current_user.sub), month)
 
 
 @router.post(
@@ -52,11 +57,12 @@ async def get_budget_summary(
 )
 async def set_budget(
     data: BudgetCreate,
-    db: AsyncSession = Depends(get_db_for_current_user),
+    db: AsyncSession = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
 ) -> BudgetResponse:
     """Set or update the overall budget limit for a specific month."""
     
-    return await budget_service.set_budget(db, data)
+    return await budget_service.set_budget(db, int(current_user.sub), data)
 
 
 @router.post(
@@ -66,8 +72,9 @@ async def set_budget(
 )
 async def set_category_budget(
     data: CategoryBudgetCreate,
-    db: AsyncSession = Depends(get_db_for_current_user),
+    db: AsyncSession = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
 ) -> CategoryBudgetResponse:
     """Set or update the budget limit for a specific category within a month."""
     
-    return await budget_service.set_category_budget(db, data)
+    return await budget_service.set_category_budget(db, int(current_user.sub), data)

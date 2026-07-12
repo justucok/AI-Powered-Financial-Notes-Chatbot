@@ -4,17 +4,15 @@ from sqlalchemy import DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 try:
-    from backend.database import AuthBase
+    from backend.database import Base
 except ModuleNotFoundError:
-    from database import AuthBase
+    from database import Base
 
 
-class User(AuthBase):
-    """SQLAlchemy ORM model for the public auth-registry database.
+class User(Base):
+    """SQLAlchemy ORM model for the unified database.
 
-    Each row represents one registered user. The ``db_path`` column
-    stores the absolute filesystem path to that user's personal SQLite
-    database, which contains their private financial transactions.
+    Each row represents one registered user.
     """
 
     __tablename__ = "users"
@@ -26,7 +24,6 @@ class User(AuthBase):
     gender: Mapped[str] = mapped_column(String(10), nullable=False, default="L")
     preferred_greeting: Mapped[str] = mapped_column(String(20), nullable=False, default="Bapak")
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    db_path: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

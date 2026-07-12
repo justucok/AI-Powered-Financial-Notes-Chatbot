@@ -101,12 +101,12 @@ async def handle_text_message(
     nickname: str | None = None,
     greeting: str | None = None,
     fund_sources: list[dict[str, Any]] | None = None,
-    auth_db: AsyncSession | None = None,
     current_user: Any = None,
 ) -> dict[str, Any]:
     """Process a text chat message with user's nickname preference and fund sources."""
+    user_id = int(current_user.sub) if current_user else None
 
-    categories = await category_service.get_categories(db)
+    categories = await category_service.get_categories(db, user_id)
 
     result = await gemini_service.process_chat(message, history, nickname, greeting, fund_sources, categories)
 
@@ -162,7 +162,7 @@ async def handle_text_message(
         saved_transactions: list[TransactionResponse] = []
         for transaction_data in processed_transactions:
             tx_create = TransactionCreate(**transaction_data)
-            transaction = await transaction_repository.create(db, tx_create)
+            transaction = await transaction_repository.create(db, user_id, tx_create)
             saved_transactions.append(TransactionResponse.model_validate(transaction))
 
         if saved_transactions:
@@ -170,7 +170,7 @@ async def handle_text_message(
 
     if result.get("action") == "query_summary":
         month = _normalize_month(result.get("month"))
-        summary = await transaction_repository.get_summary(db, month)
+        summary = await transaction_repository.get_summary(db, user_id, month)
         reply = result.get("reply") or _format_summary_reply(
             month,
             summary["total_income"],
@@ -190,7 +190,7 @@ async def handle_text_message(
         if fs_data:
             try:
                 fs_create = FundSourceCreate(**fs_data)
-                created_fs = await fund_source_repository.create(db, fs_create)
+                created_fs = await fund_source_repository.create(db, user_id, fs_create)
                 reply = result.get("reply", f"Sumber uang {fs_create.name} berhasil ditambahkan.")
                 return {
                     "action": "add_fund_source_success",
@@ -219,6 +219,7 @@ async def handle_text_message(
                 
                 created_budget = await budget_service.set_budget(
                     db,
+                    user_id,
                     BudgetCreate(month=month, amount=amount)
                 )
                 reply = result.get("reply", f"Anggaran bulanan sebesar Rp {amount:,.0f} berhasil disimpan untuk bulan {month}.").replace(",", ".")
@@ -243,7 +244,7 @@ async def handle_text_message(
                 amount = float(cb_data.get("amount", 0.0))
                 
                 # Check category exists (or match case)
-                all_cats = await category_service.get_categories(db)
+                all_cats = await category_service.get_categories(db, user_id)
                 matched_cat = next((c for c in all_cats if c.name.lower() == category_name.lower()), None)
                 if not matched_cat:
                     # Create the category automatically or return error? Let's just use the name they asked
@@ -253,6 +254,7 @@ async def handle_text_message(
                 
                 created_cb = await budget_service.set_category_budget(
                     db,
+                    user_id,
                     CategoryBudgetCreate(month=month, category_name=category_name, amount=amount)
                 )
                 reply = result.get("reply", f"Anggaran kategori {category_name} sebesar Rp {amount:,.0f} berhasil disimpan untuk bulan {month}.").replace(",", ".")
@@ -270,17 +272,17 @@ async def handle_text_message(
 
     if result.get("action") == "update_greeting":
         new_greeting = result.get("greeting")
-        if new_greeting and auth_db and current_user:
+        if new_greeting and current_user:
             try:
                 from backend.repositories import user_repository
             except ModuleNotFoundError:
                 from repositories import user_repository
                 
-            user = await user_repository.get_by_id(auth_db, int(current_user.sub))
+            user = await user_repository.get_by_id(db, user_id)
             if user:
                 user.preferred_greeting = new_greeting
-                auth_db.add(user)
-                await auth_db.commit()
+                db.add(user)
+                await db.commit()
                 
                 reply = result.get("reply", f"Sapaan berhasil diubah menjadi {new_greeting}.")
                 return {
@@ -302,10 +304,12 @@ async def handle_image_message(
     nickname: str | None = None,
     greeting: str | None = None,
     fund_sources: list[dict[str, Any]] | None = None,
+    current_user: Any = None,
 ) -> dict[str, Any]:
     """Process an image message and persist transactions when extraction succeeds."""
+    user_id = int(current_user.sub) if current_user else None
 
-    categories = await category_service.get_categories(db)
+    categories = await category_service.get_categories(db, user_id)
 
     result = await gemini_service.process_image(image_bytes, mime_type, message, nickname, greeting, categories)
 

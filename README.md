@@ -9,6 +9,7 @@ AI-Powered Financial Notes Chatbot adalah aplikasi pencatatan keuangan pribadi y
 - Python 3.10+
 - Node.js 18+
 - Gemini API Key
+- PostgreSQL (Supabase) Database URL (untuk production)
 
 ## Setup Backend
 
@@ -47,6 +48,9 @@ File `backend/.env` minimal perlu berisi:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+DATABASE_URL=sqlite+aiosqlite:///data/db.sqlite3 # Untuk development lokal
+# DATABASE_URL=postgresql+asyncpg://user:password@host/dbname # Untuk production (Supabase)
+ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend-domain.vercel.app
 ```
 
 ## API Documentation
@@ -141,6 +145,23 @@ Aplikasi ini memiliki berbagai fitur unggulan untuk membantu mencatat dan mengel
 - Mengimplementasikan fitur *Global Chat Bubble* khusus untuk versi *desktop* agar *AI Chat Assistant* dapat diakses secara mengambang dari mana saja.
 - Menghapus tulisan "Rp Rp" ganda yang muncul akibat konflik pembentukan format Rupiah di halaman *Dashboard* dan *Pengaturan* (Sumber Uang & Anggaran).
 - Menyatukan informasi *Statistics* dan *Dashboard* pada mode layar *desktop*.
+
+## Deployment ke Production
+
+Proyek ini telah dikonfigurasi agar siap di-deploy dengan arsitektur berikut:
+1. **Frontend**: Vercel
+2. **Backend**: Render (Web Service gratis)
+3. **Database**: Supabase (PostgreSQL)
+
+### Persiapan Variabel Environment (Secrets)
+Pastikan Anda menambahkan Environment Variables ini di Dashboard Render dan Vercel. **Penting: Jangan pernah mengekspos API Keys atau Database URL di dalam kode sumber / repository.**
+- Render: Tambahkan `GEMINI_API_KEY`, `DATABASE_URL` (dari Supabase dengan format `postgresql+asyncpg://...`), dan `ALLOWED_ORIGINS` (URL dari Vercel).
+- Vercel: Tambahkan `VITE_API_BASE_URL` mengarah ke URL layanan Render Anda.
+
+### Branch Management
+Proyek ini menggunakan dua branch utama:
+- `develop`: Untuk pengembangan lokal menggunakan SQLite (set `DATABASE_URL` ke `sqlite+aiosqlite:///...`).
+- `main`: Branch stabil yang terhubung otomatis ke Render dan Vercel untuk production menggunakan PostgreSQL Supabase.
 
 ## Fitur Aplikasi (Features)
 

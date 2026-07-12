@@ -33,42 +33,45 @@ def _get_current_month() -> str:
 
 async def get_transactions(
     db: AsyncSession,
+    user_id: int,
     month: str | None,
 ) -> list[TransactionResponse]:
     """Fetch transactions and map them into response schemas."""
 
     normalized_month = _validate_month(month) if month is not None else None
-    transactions = await transaction_repository.get_all(db, normalized_month)
+    transactions = await transaction_repository.get_all(db, user_id, normalized_month)
     return [TransactionResponse.model_validate(transaction) for transaction in transactions]
 
 
 async def create_transaction(
     db: AsyncSession,
+    user_id: int,
     data: TransactionCreate,
 ) -> TransactionResponse:
     """Create a transaction and return the serialized result."""
 
-    transaction = await transaction_repository.create(db, data)
+    transaction = await transaction_repository.create(db, user_id, data)
     return TransactionResponse.model_validate(transaction)
 
 
 async def update_transaction(
     db: AsyncSession,
+    user_id: int,
     id: int,
     data: TransactionCreate,
 ) -> TransactionResponse:
     """Update a transaction and return the serialized result."""
 
-    transaction = await transaction_repository.update(db, id, data)
+    transaction = await transaction_repository.update(db, user_id, id, data)
     if transaction is None:
         raise ValueError("Transaction not found.")
     return TransactionResponse.model_validate(transaction)
 
 
-async def delete_transaction(db: AsyncSession, id: int) -> dict[str, str | int]:
+async def delete_transaction(db: AsyncSession, user_id: int, id: int) -> dict[str, str | int]:
     """Delete a transaction and return a simple status payload."""
 
-    transaction = await transaction_repository.delete(db, id)
+    transaction = await transaction_repository.delete(db, user_id, id)
     if transaction is None:
         raise ValueError("Transaction not found.")
 
@@ -78,9 +81,9 @@ async def delete_transaction(db: AsyncSession, id: int) -> dict[str, str | int]:
     }
 
 
-async def get_summary(db: AsyncSession, month: str | None) -> SummaryResponse:
+async def get_summary(db: AsyncSession, user_id: int, month: str | None) -> SummaryResponse:
     """Return the monthly financial summary."""
 
     normalized_month = _validate_month(month) if month is not None else _get_current_month()
-    summary = await transaction_repository.get_summary(db, normalized_month)
+    summary = await transaction_repository.get_summary(db, user_id, normalized_month)
     return SummaryResponse.model_validate(summary)

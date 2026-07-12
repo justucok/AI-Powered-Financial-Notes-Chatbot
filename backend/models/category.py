@@ -4,12 +4,12 @@ from sqlalchemy import CheckConstraint, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 try:
-    from backend.database import UserDataBase
+    from backend.database import Base
 except ModuleNotFoundError:
-    from database import UserDataBase
+    from database import Base
 
 
-class Category(UserDataBase):
+class Category(Base):
     """SQLAlchemy ORM model for categories (per-user database)."""
 
     __tablename__ = "categories"
@@ -21,6 +21,7 @@ class Category(UserDataBase):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     icon: Mapped[str | None] = mapped_column(String(20), nullable=True)

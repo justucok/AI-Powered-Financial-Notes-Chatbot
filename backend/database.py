@@ -1,3 +1,4 @@
+import logging
 import os
 from collections.abc import AsyncGenerator
 
@@ -8,114 +9,64 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
+try:
+    from backend.config import get_settings
+except ModuleNotFoundError:
+    from config import get_settings
+
+logger = logging.getLogger(__name__)
+
 # ---------------------------------------------------------------------------
 # Ensure the data directory exists
 # ---------------------------------------------------------------------------
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
-AUTH_DB_PATH = os.path.join(DATA_DIR, "auth.db")
-AUTH_DB_URL = f"sqlite+aiosqlite:///{AUTH_DB_PATH}"
-
 
 # ---------------------------------------------------------------------------
-# Declarative bases — auth and user-data are kept completely separate
+# Single declarative base — semua model dalam 1 DB
 # ---------------------------------------------------------------------------
+class Base(DeclarativeBase):
+    """Single base for all ORM models (auth + financial data)."""
 
 
-class AuthBase(DeclarativeBase):
-    """Base class for the public auth-registry ORM models."""
+_settings = get_settings()
 
+_engine_kwargs: dict = {
+    "future": True,
+    "pool_pre_ping": True,
+}
 
-class UserDataBase(DeclarativeBase):
-    """Base class for per-user financial-data ORM models."""
+if not _settings.database_url.startswith("sqlite"):
+    _engine_kwargs["pool_size"] = 5
+    _engine_kwargs["max_overflow"] = 10
 
+engine = create_async_engine(_settings.database_url, **_engine_kwargs)
 
-# ---------------------------------------------------------------------------
-# Auth DB — single engine shared across the application lifetime
-# ---------------------------------------------------------------------------
-
-auth_engine = create_async_engine(
-    AUTH_DB_URL,
-    future=True,
-    pool_pre_ping=True,
-)
-AuthAsyncSessionFactory = async_sessionmaker(
-    bind=auth_engine,
+AsyncSessionFactory = async_sessionmaker(
+    bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
 
-
-async def init_auth_db() -> None:
-    """Create auth-registry tables during application startup."""
-
-    # Import here to avoid circular imports
+async def init_db() -> None:
+    """Create all tables on startup."""
     try:
-        from backend.models import user  # noqa: F401
+        from backend.models import user, transaction, fund_source, category, budget  # noqa: F401
     except ModuleNotFoundError:
-        from models import user  # noqa: F401
+        from models import user, transaction, fund_source, category, budget  # noqa: F401
 
-    async with auth_engine.begin() as conn:
-        await conn.run_sync(AuthBase.metadata.create_all)
-
-
-async def close_auth_db() -> None:
-    """Dispose the auth database engine during application shutdown."""
-
-    await auth_engine.dispose()
-
-
-async def get_auth_db() -> AsyncGenerator[AsyncSession, None]:
-    """Yield an auth-registry database session for FastAPI dependencies."""
-
-    async with AuthAsyncSessionFactory() as session:
-        yield session
-
-
-# ---------------------------------------------------------------------------
-# Per-user DB — engine created on-demand from the user's db_path
-# ---------------------------------------------------------------------------
-
-
-async def get_user_db(db_path: str) -> AsyncGenerator[AsyncSession, None]:
-    """Yield a session for the user's personal financial database.
-
-    A fresh engine is created per-request and disposed afterwards.
-    This is acceptable for SQLite where connection overhead is minimal.
-    """
-
-    engine = create_async_engine(
-        f"sqlite+aiosqlite:///{db_path}",
-        future=True,
-    )
-    factory = async_sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-    try:
-        async with factory() as session:
-            yield session
-    finally:
-        await engine.dispose()
-
-
-async def init_user_db(db_path: str) -> None:
-    """Create transaction tables in a newly provisioned user database."""
-
-    try:
-        from backend.models.transaction import Transaction  # noqa: F401
-        from backend.models.fund_source import FundSource   # noqa: F401
-        from backend.models.category import Category        # noqa: F401
-        from backend.models.budget import Budget, CategoryBudget  # noqa: F401
-    except ModuleNotFoundError:
-        from models.transaction import Transaction  # noqa: F401
-        from models.fund_source import FundSource   # noqa: F401
-        from models.category import Category        # noqa: F401
-        from models.budget import Budget, CategoryBudget  # noqa: F401
-
-    engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}", future=True)
     async with engine.begin() as conn:
-        await conn.run_sync(UserDataBase.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database initialised: %s", _settings.database_url.split("@")[-1])
+
+
+async def close_db() -> None:
+    """Dispose the engine on shutdown."""
     await engine.dispose()
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Yield a database session for use in FastAPI Depends."""
+    async with AsyncSessionFactory() as session:
+        yield session

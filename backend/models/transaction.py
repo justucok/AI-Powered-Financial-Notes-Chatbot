@@ -4,12 +4,12 @@ from sqlalchemy import CheckConstraint, Date, DateTime, Float, ForeignKey, Integ
 from sqlalchemy.orm import Mapped, mapped_column
 
 try:
-    from backend.database import UserDataBase
+    from backend.database import Base
 except ModuleNotFoundError:
-    from database import UserDataBase
+    from database import Base
 
 
-class Transaction(UserDataBase):
+class Transaction(Base):
     """SQLAlchemy ORM model for financial transactions (per-user database)."""
 
     __tablename__ = "transactions"
@@ -21,6 +21,7 @@ class Transaction(UserDataBase):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     type: Mapped[str] = mapped_column(String(20), nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     category: Mapped[str] = mapped_column(String(100), nullable=False)

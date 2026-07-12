@@ -12,7 +12,7 @@ Aplikasi pencatatan keuangan berbasis AI dengan chatbot untuk input transaksi vi
 |---|---|
 | Backend | Python + FastAPI |
 | AI Model | Gemini 2.5 Pro (Google AI Studio) |
-| Database | SQLite + SQLAlchemy |
+| Database | PostgreSQL (Supabase) / SQLite (Dev) + SQLAlchemy 2.0 |
 | Frontend | Vue 3 + Vite + TailwindCSS |
 | HTTP Client | Axios |
 
@@ -185,7 +185,7 @@ Terapkan konvensi Git berikut ini pada setiap perubahan kode:
                               ┌───────────────────┼──────────────────┐
                               │                   │                  │
                     ┌─────────▼──────┐  ┌─────────▼──────┐ ┌────────▼───────┐
-                    │  Gemini API    │  │    SQLite       │ │ Gemini Vision  │
+                    │  Gemini API    │  │ PostgreSQL/SQLite│ │ Gemini Vision  │
                     │ (Text/Chat)    │  │  (Transactions) │ │ (Image/Nota)   │
                     └────────────────┘  └─────────────────┘ └────────────────┘
 ```
@@ -264,6 +264,7 @@ project-root/
 ```sql
 CREATE TABLE transactions (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   type        TEXT NOT NULL CHECK(type IN ('income', 'expense')),
   amount      REAL NOT NULL,
   category    TEXT NOT NULL,
@@ -271,6 +272,8 @@ CREATE TABLE transactions (
   date        TEXT NOT NULL,
   created_at  TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Schema telah dikonsolidasi. Tabel lain (budgets, categories, fund_sources) juga memiliki user_id foreign key untuk isolasi data per user.
 ```
 
 ---

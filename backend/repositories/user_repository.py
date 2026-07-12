@@ -21,7 +21,6 @@ async def create(
     full_name: str,
     nickname: str,
     hashed_password: str,
-    db_path: str,
 ) -> User:
     """Create a new user account in the database."""
 
@@ -30,7 +29,6 @@ async def create(
         full_name=full_name,
         nickname=nickname,
         hashed_password=hashed_password,
-        db_path=db_path,
     )
     db.add(user)
     await db.commit()

@@ -3,17 +3,21 @@ from sqlalchemy import Float, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 try:
-    from backend.database import UserDataBase
+    from backend.database import Base
 except ModuleNotFoundError:
-    from database import UserDataBase
+    from database import Base
 
 
-class Budget(UserDataBase):
+class Budget(Base):
     """SQLAlchemy ORM model for overall monthly budget (per-user database)."""
     __tablename__ = "budgets"
+    __table_args__ = (
+        UniqueConstraint("user_id", "month", name="uq_user_month_budget"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    month: Mapped[str] = mapped_column(String(7), nullable=False, unique=True)  # Format: YYYY-MM
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    month: Mapped[str] = mapped_column(String(7), nullable=False)  # Format: YYYY-MM
     amount: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     created_at: Mapped[datetime] = mapped_column(
         nullable=False,
@@ -28,7 +32,7 @@ class Budget(UserDataBase):
     )
 
 
-class CategoryBudget(UserDataBase):
+class CategoryBudget(Base):
     """SQLAlchemy ORM model for category budgets (per-user database)."""
     __tablename__ = "category_budgets"
     __table_args__ = (

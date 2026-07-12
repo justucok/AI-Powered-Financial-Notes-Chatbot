@@ -27,10 +27,10 @@ def _get_month_range(month: str) -> tuple[date, date]:
     return start_date, end_date
 
 
-async def get_all(db: AsyncSession, month: str | None) -> list[Transaction]:
-    """Return all transactions, optionally filtered by month."""
+async def get_all(db: AsyncSession, user_id: int, month: str | None) -> list[Transaction]:
+    """Return all transactions for a user, optionally filtered by month."""
 
-    statement = select(Transaction).order_by(Transaction.date.desc(), Transaction.id.desc())
+    statement = select(Transaction).where(Transaction.user_id == user_id).order_by(Transaction.date.desc(), Transaction.id.desc())
 
     if month is not None:
         start_date, end_date = _get_month_range(month)
@@ -43,10 +43,11 @@ async def get_all(db: AsyncSession, month: str | None) -> list[Transaction]:
     return list(result.scalars().all())
 
 
-async def create(db: AsyncSession, data: TransactionCreate) -> Transaction:
+async def create(db: AsyncSession, user_id: int, data: TransactionCreate) -> Transaction:
     """Persist a new transaction and return the saved entity."""
 
     transaction = Transaction(
+        user_id=user_id,
         type=data.type,
         amount=data.amount,
         category=data.category,
@@ -60,10 +61,11 @@ async def create(db: AsyncSession, data: TransactionCreate) -> Transaction:
     return transaction
 
 
-async def update(db: AsyncSession, id: int, data: TransactionCreate) -> Transaction | None:
+async def update(db: AsyncSession, user_id: int, id: int, data: TransactionCreate) -> Transaction | None:
     """Update an existing transaction and return the updated entity when found."""
 
-    transaction = await db.get(Transaction, id)
+    statement = select(Transaction).where(Transaction.id == id, Transaction.user_id == user_id)
+    transaction = await db.scalar(statement)
     if transaction is None:
         return None
 
@@ -79,10 +81,11 @@ async def update(db: AsyncSession, id: int, data: TransactionCreate) -> Transact
     return transaction
 
 
-async def delete(db: AsyncSession, id: int) -> Transaction | None:
+async def delete(db: AsyncSession, user_id: int, id: int) -> Transaction | None:
     """Delete a transaction by id and return the removed entity when found."""
 
-    transaction = await db.get(Transaction, id)
+    statement = select(Transaction).where(Transaction.id == id, Transaction.user_id == user_id)
+    transaction = await db.scalar(statement)
     if transaction is None:
         return None
 
@@ -91,7 +94,7 @@ async def delete(db: AsyncSession, id: int) -> Transaction | None:
     return transaction
 
 
-async def get_summary(db: AsyncSession, month: str) -> dict[str, float]:
+async def get_summary(db: AsyncSession, user_id: int, month: str) -> dict[str, float]:
     """Return the monthly income, expense, and balance summary."""
 
     start_date, end_date = _get_month_range(month)
@@ -105,6 +108,7 @@ async def get_summary(db: AsyncSession, month: str) -> dict[str, float]:
             0.0,
         ).label("total_expense"),
     ).where(
+        Transaction.user_id == user_id,
         Transaction.date >= start_date,
         Transaction.date < end_date,
     )

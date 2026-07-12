@@ -10,12 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 try:
     from backend.config import get_settings
-    from backend.database import DATA_DIR, init_user_db
     from backend.repositories import user_repository
     from backend.schemas.auth import LoginRequest, RegisterRequest, TokenPayload, TokenResponse
 except ModuleNotFoundError:
     from config import get_settings
-    from database import DATA_DIR, init_user_db
     from repositories import user_repository
     from schemas.auth import LoginRequest, RegisterRequest, TokenPayload, TokenResponse
 
@@ -72,7 +70,6 @@ def decode_access_token(token: str) -> TokenPayload:
         full_name=str(claims["full_name"]),
         nickname=str(claims["nickname"]),
         preferred_greeting=str(claims.get("preferred_greeting", "")),
-        db_path=str(claims["db_path"]),
     )
 
 
@@ -90,8 +87,6 @@ async def register_user(db: AsyncSession, data: RegisterRequest) -> dict[str, st
         raise ValueError(f"Email '{data.email}' sudah terdaftar.")
 
     hashed = hash_password(data.password)
-    db_filename = f"db_{uuid.uuid4().hex}.sqlite3"
-    db_path = os.path.join(DATA_DIR, db_filename)
 
     # Default greeting based on gender
     greeting = "Bapak" if data.gender.upper() == "L" else "Ibu"
@@ -102,37 +97,22 @@ async def register_user(db: AsyncSession, data: RegisterRequest) -> dict[str, st
         full_name=data.full_name,
         nickname=data.nickname,
         hashed_password=hashed,
-        db_path=db_path,
     )
     user.gender = data.gender
     user.preferred_greeting = greeting
     db.add(user)
-    await db.commit()
-    await db.refresh(user)
-    logger.info("Registered new user (%s) with db_path='%s'", user.email, db_path)
-
-    # Provision the per-user database
-    await init_user_db(db_path)
-    logger.info("Initialised user database at '%s'", db_path)
+    await db.flush()
     
-    # Add initial FundSource
+    logger.info("Registered new user (%s)", user.email)
+
     try:
-        from backend.database import get_user_db
         from backend.models.fund_source import FundSource
     except ModuleNotFoundError:
-        from database import get_user_db
         from models.fund_source import FundSource
-    
-    user_db_gen = get_user_db(db_path)
-    user_db_session = await anext(user_db_gen)
-    try:
-        user_db_session.add(FundSource(name="Cash", type="cash", icon="💵"))
-        await user_db_session.commit()
-    finally:
-        try:
-            await anext(user_db_gen)
-        except StopAsyncIteration:
-            pass
+        
+    db.add(FundSource(user_id=user.id, name="Cash", type="cash", icon="💵"))
+    await db.commit()
+    await db.refresh(user)
 
     return {"message": "Pendaftaran berhasil."}
 
@@ -150,7 +130,6 @@ async def login_user(db: AsyncSession, data: LoginRequest) -> TokenResponse:
         "full_name": user.full_name,
         "nickname": user.nickname,
         "preferred_greeting": user.preferred_greeting,
-        "db_path": user.db_path,
     }
     token = create_access_token(token_payload)
     logger.info("User email '%s' logged in successfully.", user.email)
@@ -213,7 +192,7 @@ async def update_profile(db: AsyncSession, user_id: int, data) -> dict:
     }
 
 
-async def delete_account(db: AsyncSession, user_id: int, password: str, db_path: str) -> dict:
+async def delete_account(db: AsyncSession, user_id: int, password: str) -> dict:
     """Delete the user account and their personal database."""
     user = await user_repository.get_by_id(db, user_id)
     if not user or not verify_password(password, user.hashed_password):
@@ -222,14 +201,6 @@ async def delete_account(db: AsyncSession, user_id: int, password: str, db_path:
     # 1. Delete from auth DB
     await user_repository.delete_by_id(db, user_id)
     
-    # 2. Delete the physical SQLite file for the user
-    try:
-        if os.path.exists(db_path):
-            os.remove(db_path)
-            logger.info("Deleted physical database for user %s at %s", user_id, db_path)
-    except Exception as e:
-        logger.warning("Failed to delete physical database %s: %s", db_path, e)
-
     return {"message": "Akun berhasil dihapus permanen."}
 
 def create_reset_token(user) -> str:

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 try:
-    from backend.database import get_auth_db
+    from backend.database import get_db
     from backend.dependencies.auth import get_current_user
     from backend.schemas.auth import (
         ChangePasswordRequest,
@@ -19,7 +19,7 @@ try:
     )
     from backend.services import auth_service
 except ModuleNotFoundError:
-    from database import get_auth_db
+    from database import get_db
     from dependencies.auth import get_current_user
     from schemas.auth import (
         ChangePasswordRequest,
@@ -47,7 +47,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 )
 async def register(
     data: RegisterRequest,
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Handle new user registration with email, username, full name, and nickname."""
 
@@ -67,7 +67,7 @@ async def register(
 )
 async def login(
     data: LoginRequest,
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Authenticate a user using email and password, returning a JWT access token."""
 
@@ -88,7 +88,7 @@ async def login(
 )
 async def login_form(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """OAuth2 password-grant form login (accepts email in 'username' field for Swagger compatibility)."""
 
@@ -110,7 +110,7 @@ async def login_form(
 )
 async def get_profile(
     current_user: TokenPayload = Depends(get_current_user),
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> ProfileResponse:
     """Get the profile of the currently authenticated user."""
     try:
@@ -127,7 +127,7 @@ async def get_profile(
 async def update_profile(
     data: UpdateProfileRequest,
     current_user: TokenPayload = Depends(get_current_user),
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Update the user's profile (name and nickname)."""
     try:
@@ -144,7 +144,7 @@ async def update_profile(
 async def change_password(
     data: ChangePasswordRequest,
     current_user: TokenPayload = Depends(get_current_user),
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Change the user's password."""
     try:
@@ -161,11 +161,11 @@ async def change_password(
 async def delete_account(
     data: DeleteAccountRequest,
     current_user: TokenPayload = Depends(get_current_user),
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Delete the user account and associated personal database."""
     try:
-        return await auth_service.delete_account(db, int(current_user.sub), data.password, current_user.db_path)
+        return await auth_service.delete_account(db, int(current_user.sub), data.password)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
@@ -176,7 +176,7 @@ async def delete_account(
 )
 async def forgot_password(
     data: ForgotPasswordRequest,
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Send reset password email with single-use token."""
     try:
@@ -191,7 +191,7 @@ async def forgot_password(
 )
 async def reset_password(
     data: ResetPasswordRequest,
-    db: AsyncSession = Depends(get_auth_db),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Reset password immediately using single-use token."""
     try:
