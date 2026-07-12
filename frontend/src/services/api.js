@@ -95,6 +95,19 @@ export async function sendChatImage(file, message = '', fundSources = []) {
   return response.data
 }
 
+export async function sendChatPdf(file, password, fundSources = []) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('password', password)
+  formData.append('fund_sources', JSON.stringify(fundSources))
+
+  const response = await apiClient.post('/v1/chat/pdf', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000, // PDF processing bisa lebih lama
+  })
+  return response.data
+}
+
 
 // --- Fund Sources ---
 export async function getFundSources() {

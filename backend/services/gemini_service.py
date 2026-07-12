@@ -142,6 +142,32 @@ ATURAN:
 - Gunakan Bahasa Indonesia yang formal dan sopan
 """.strip()
 
+PDF_STATEMENT_PROMPT = """
+Kamu diberikan teks yang diekstrak dari e-statement/mutasi rekening bank Indonesia.
+Ekstrak SEMUA transaksi (debit/kredit) yang tercantum dan kembalikan dalam format JSON berikut:
+{
+  "is_transaction": true,
+  "transactions": [
+    {
+      "type": "income" atau "expense",
+      "amount": <angka tanpa titik/koma>,
+      "category": <string kategori>,
+      "description": <deskripsi singkat dari kolom keterangan/mutasi>,
+      "date": <"YYYY-MM-DD">
+    }
+  ],
+  "reply": <ringkasan formal: berapa transaksi ditemukan, rentang tanggal, total debit/kredit>
+}
+
+ATURAN PENTING:
+- Kredit/CR/Masuk = "income"
+- Debit/DB/Keluar = "expense"
+- Abaikan baris saldo akhir/saldo awal, hanya ambil baris mutasi
+- Jika tanggal hanya berisi hari/bulan (tanpa tahun), inferensikan tahun dari konteks dokumen
+- Kategori: gunakan Gaji, Transfer, Belanja, Makanan, Transport, Tagihan, Investasi, Lainnya
+- Gunakan Bahasa Indonesia yang formal pada field 'reply'
+""".strip()
+
 CHAT_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -411,6 +437,49 @@ async def process_image(
         logger.exception("Gemini returned invalid JSON for image processing.")
     except Exception:
         logger.exception("Gemini image processing failed.")
+
+    return ERROR_FALLBACK.copy()
+
+
+async def process_pdf_statement(
+    pdf_text: str,
+    nickname: str | None = None,
+    greeting: str | None = None,
+    categories: list[Any] | None = None,
+) -> dict[str, Any]:
+    """Proses teks e-statement bank dan ekstrak semua transaksi.
+
+    Args:
+        pdf_text: Teks yang sudah diekstrak dari PDF e-statement.
+        nickname: Nama panggilan pengguna untuk personalisasi balasan.
+        greeting: Sapaan yang disukai pengguna.
+        categories: Daftar kategori pengguna untuk klasifikasi.
+
+    Returns:
+        Dict berisi list transaksi yang diekstrak atau error fallback.
+    """
+    prompt = PDF_STATEMENT_PROMPT
+    greeting_str = greeting or "Bapak/Ibu"
+    if nickname:
+        prompt += (
+            f"\n\nSapa pengguna dengan sebutan '{greeting_str} {nickname}' pada field 'reply'."
+        )
+    if categories:
+        cats_str = ", ".join(f'"{c.name}"' for c in categories)
+        prompt += f"\n\nKATEGORI TERSEDIA: {cats_str}"
+
+    full_prompt = f"{prompt}\n\n--- TEKS E-STATEMENT ---\n{pdf_text}"
+    generation_config = _get_generation_config(CHAT_RESPONSE_SCHEMA)
+
+    try:
+        response = await _get_client().aio.models.generate_content(
+            model=MODEL_NAME,
+            contents=full_prompt,
+            config=generation_config,
+        )
+        return _parse_response(response)
+    except Exception:
+        logger.exception("Gagal memproses teks e-statement.")
 
     return ERROR_FALLBACK.copy()
 
