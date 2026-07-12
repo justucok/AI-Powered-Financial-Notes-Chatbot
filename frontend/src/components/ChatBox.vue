@@ -3,6 +3,7 @@ import { nextTick, ref, watchEffect } from 'vue'
 
 import { useChat } from '../composables/useChat'
 import FundSourcePickerModal from './FundSourcePickerModal.vue'
+import PdfPasswordModal from './PdfPasswordModal.vue'
 import { confirmTransactions as confirmTransactionsApi } from '../services/api'
 
 const emit = defineEmits({
@@ -20,6 +21,8 @@ const fileInputRef = ref(null)
 const messagesContainerRef = ref(null)
 
 const showFundSourceModal = ref(false)
+const showPdfPasswordModal = ref(false)
+const selectedPdfFile = ref(null)
 const currentPendingTransactions = ref([])
 const currentReply = ref('')
 const isConfirming = ref(false)
@@ -34,6 +37,7 @@ const {
   clearImage,
   submitCurrentInput,
   appendBotMessage,
+  sendPdfMessage,
 } = useChat(
   (transaction) => {
     emit('transaction-added', transaction)
@@ -91,7 +95,29 @@ watchEffect(() => {
 
 function handleFileChange(event) {
   const [file] = event.target.files || []
-  selectImage(file || null)
+  if (file && file.type === 'application/pdf') {
+    selectedPdfFile.value = file
+    showPdfPasswordModal.value = true
+  } else {
+    selectImage(file || null)
+  }
+}
+
+async function handleConfirmPdf(password) {
+  showPdfPasswordModal.value = false
+  await sendPdfMessage(selectedPdfFile.value, password)
+  selectedPdfFile.value = null
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
+}
+
+function handleCancelPdf() {
+  showPdfPasswordModal.value = false
+  selectedPdfFile.value = null
+  if (fileInputRef.value) {
+    fileInputRef.value.value = ''
+  }
 }
 
 function openFilePicker() {
@@ -211,7 +237,7 @@ function handleClearImage() {
       <input
         ref="fileInputRef"
         type="file"
-        accept="image/*"
+        accept="image/*,.pdf"
         class="hidden"
         @change="handleFileChange"
       >
@@ -245,6 +271,14 @@ function handleClearImage() {
       :is-loading="isConfirming"
       @close="handleCancelTransaction"
       @confirm="handleConfirmTransactions"
+    />
+
+    <PdfPasswordModal
+      :show="showPdfPasswordModal"
+      :file="selectedPdfFile"
+      :is-loading="isLoading"
+      @close="handleCancelPdf"
+      @confirm="handleConfirmPdf"
     />
   </section>
 </template>
