@@ -112,6 +112,13 @@ export async function deleteFundSource(id) {
   return response.data
 }
 
+export async function adjustFundSourceBalance(id, targetBalance) {
+  const response = await apiClient.patch(`/v1/fund-sources/${id}/balance`, {
+    target_balance: targetBalance,
+  })
+  return response.data
+}
+
 // --- Categories ---
 export async function getCategories() {
   const response = await apiClient.get('/v1/categories')

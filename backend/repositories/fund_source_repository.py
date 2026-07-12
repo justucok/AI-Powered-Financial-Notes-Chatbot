@@ -12,6 +12,23 @@ except ModuleNotFoundError:
     from schemas.fund_source import FundSourceCreate
 
 
+async def get_real_time_balance(db: AsyncSession, user_id: int, id: int) -> float | None:
+    """Return the real-time balance of a single fund source, or None if not found."""
+    fs = await get_by_id(db, user_id, id)
+    if not fs:
+        return None
+
+    tx_sum_stmt = select(
+        func.coalesce(func.sum(case((Transaction.type == "income", Transaction.amount), else_=0.0)), 0.0),
+        func.coalesce(func.sum(case((Transaction.type == "expense", Transaction.amount), else_=0.0)), 0.0),
+    ).where(Transaction.fund_source_id == id, Transaction.user_id == user_id)
+
+    result = await db.execute(tx_sum_stmt)
+    total_income, total_expense = result.first()
+    
+    return fs.initial_balance + float(total_income or 0.0) - float(total_expense or 0.0)
+
+
 async def get_all_with_balance(db: AsyncSession, user_id: int) -> list[dict]:
     """Return all fund sources with computed real-time balance.
     balance = initial_balance + SUM(income) - SUM(expense)

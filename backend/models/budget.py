@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Float, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Float, ForeignKey, String, UniqueConstraint, func, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 try:

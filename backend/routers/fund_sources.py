@@ -5,13 +5,13 @@ try:
     from backend.database import get_db
     from backend.dependencies.auth import get_current_user
     from backend.schemas.auth import TokenPayload
-    from backend.schemas.fund_source import FundSourceCreate, FundSourceResponse
+    from backend.schemas.fund_source import FundSourceCreate, FundSourceResponse, AdjustBalanceRequest
     from backend.services import fund_source_service
 except ModuleNotFoundError:
     from database import get_db
     from dependencies.auth import get_current_user
     from schemas.auth import TokenPayload
-    from schemas.fund_source import FundSourceCreate, FundSourceResponse
+    from schemas.fund_source import FundSourceCreate, FundSourceResponse, AdjustBalanceRequest
     from services import fund_source_service
 
 
@@ -59,6 +59,29 @@ async def delete_fund_source(
     """Delete a fund source by ID."""
     try:
         return await fund_source_service.delete_fund_source(db, int(current_user.sub), source_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+@router.patch(
+    "/{source_id}/balance",
+    response_model=dict,
+    summary="Adjust fund source balance to a target value",
+)
+async def adjust_balance(
+    source_id: int,
+    data: AdjustBalanceRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: TokenPayload = Depends(get_current_user),
+) -> dict:
+    """Compute delta vs real-time balance and auto-create an adjustment transaction."""
+    try:
+        return await fund_source_service.adjust_balance(
+            db, int(current_user.sub), source_id, data.target_balance
+        )
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

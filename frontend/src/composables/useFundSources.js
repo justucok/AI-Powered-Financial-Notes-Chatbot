@@ -4,6 +4,7 @@ import {
   createFundSource as createFundSourceRequest,
   deleteFundSource as deleteFundSourceRequest,
   getFundSources,
+  adjustFundSourceBalance,
 } from '../services/api'
 
 export function useFundSources() {
@@ -53,6 +54,21 @@ export function useFundSources() {
     }
   }
 
+  async function adjustBalance(id, targetBalance) {
+    loading.value = true
+    error.value = null
+    try {
+      const result = await adjustFundSourceBalance(id, targetBalance)
+      await fetchSources()
+      return result
+    } catch (err) {
+      error.value = err.response?.data?.detail || 'Gagal menyesuaikan saldo'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     sources,
     loading,
@@ -60,5 +76,6 @@ export function useFundSources() {
     fetchSources,
     addSource,
     removeSource,
+    adjustBalance,
   }
 }

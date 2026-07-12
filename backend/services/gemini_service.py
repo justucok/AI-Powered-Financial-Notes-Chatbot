@@ -96,7 +96,16 @@ INSTRUKSI UTAMA:
   "reply": <string balasan formal yang mengonfirmasi bahwa mulai sekarang bot akan memanggil dengan sebutan tersebut>
 }
 
-7. Jika bukan transaksi, bukan query keuangan, bukan penambahan sumber uang, bukan pengaturan budget, dan bukan permintaan ubah nama panggilan, balas secara natural:
+7. Jika pengguna ingin menyesuaikan atau mengubah saldo suatu sumber uang ke nominal tertentu (contoh: "ubah saldo bca jadi 100 ribu", "adjust saldo gopay menjadi 50000"), kembalikan:
+{
+  "is_transaction": false,
+  "action": "adjust_balance",
+  "fund_source_name": <string nama sumber uang yang disebut pengguna>,
+  "target_balance": <angka nominal saldo yang diinginkan tanpa titik/koma>,
+  "reply": <string balasan formal>
+}
+
+8. Jika bukan transaksi, bukan query keuangan, bukan penambahan sumber uang, bukan pengaturan budget, bukan permintaan ubah nama panggilan, dan bukan penyesuaian saldo, balas secara natural:
 {
   "is_transaction": false,
   "action": "chat",
@@ -156,6 +165,8 @@ CHAT_RESPONSE_SCHEMA: dict[str, Any] = {
         "month": {"type": ["string", "null"]},
         "reply": {"type": ["string", "null"]},
         "greeting": {"type": ["string", "null"]},
+        "fund_source_name": {"type": ["string", "null"]},
+        "target_balance": {"type": ["number", "null"]},
         "fund_source": {
             "type": ["object", "null"],
             "properties": {
