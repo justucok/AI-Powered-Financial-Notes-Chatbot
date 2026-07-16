@@ -97,13 +97,6 @@ const navItems = [
         >
           <span class="text-lg">📋</span> History
         </button>
-        <button
-          type="button"
-          :class="['flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold transition duration-200', currentPage === 'statistics' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'hover:bg-slate-800 hover:text-white']"
-          @click="emit('navigate', 'statistics')"
-        >
-          <span class="text-lg">📊</span> Statistik
-        </button>
       </nav>
 
       <div class="p-4 border-t border-slate-800">

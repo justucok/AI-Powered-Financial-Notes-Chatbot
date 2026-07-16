@@ -3,6 +3,7 @@ import { getTransactions, getSummary, getCategories } from '../services/api'
 
 export function useStatistics() {
   const loading = ref(false)
+  const error = ref(null)
   
   // Data State
   const dailyTransactions = ref([])
@@ -24,7 +25,14 @@ export function useStatistics() {
     return keys
   }
 
+  let abortController = null
+  
   async function fetchStatisticsData(currentMonthKey) {
+    if (abortController) {
+      abortController.abort()
+    }
+    abortController = new AbortController()
+
     loading.value = true
     try {
       // Fetch concurrent data
@@ -34,23 +42,31 @@ export function useStatistics() {
       const last6 = getLast6MonthsKeys(currentMonthKey)
       
       const [transactionsRes, categoriesRes, ...summariesRes] = await Promise.all([
-        getTransactions(currentMonthKey),
-        getCategories(),
-        ...last6.map(m => getSummary(m).then(data => ({ month: m, ...data })))
+        getTransactions(currentMonthKey, { signal: abortController.signal }),
+        getCategories({ signal: abortController.signal }),
+        ...last6.map(m => getSummary(m, { signal: abortController.signal }).then(data => ({ month: m, ...data })))
       ])
 
       dailyTransactions.value = transactionsRes
       allCategories.value = categoriesRes
       monthlySummaries.value = summariesRes
     } catch (err) {
+      if (err.name === 'CanceledError' || err.message === 'canceled') {
+        console.log('fetchStatisticsData request canceled')
+        return // Do not update error or loading state if it was canceled
+      }
+      error.value = err.message || 'Gagal memuat data statistik'
       console.error("Failed to fetch statistics data:", err)
     } finally {
-      loading.value = false
+      if (!abortController || !abortController.signal.aborted) {
+        loading.value = false
+      }
     }
   }
 
   return {
     loading,
+    error,
     dailyTransactions,
     monthlySummaries,
     allCategories,

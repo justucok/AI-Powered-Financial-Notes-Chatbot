@@ -12,6 +12,8 @@ import HistoryPage from './views/HistoryPage.vue'
 import SettingsPage from './views/SettingsPage.vue'
 import StatisticsPage from './views/StatisticsPage.vue'
 import BudgetPage from './views/BudgetPage.vue'
+import CategoryHistoryPage from './views/CategoryHistoryPage.vue'
+import CategoryHistoryModal from './components/CategoryHistoryModal.vue'
 import { useIdleTimer } from './composables/useIdleTimer'
 
 const { isLoggedIn, fullName, nickname, logout } = useAuth()
@@ -61,6 +63,20 @@ useIdleTimer(() => {
     sessionExpiredMsg.value = 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 30 menit.'
   }
 })
+
+const showCategoryModal = ref(false)
+const categoryFilter = ref({ category: '', month: '', transactions: [] })
+const previousPage = ref('dashboard')
+
+function handleShowCategoryHistory(payload, sourcePage) {
+  categoryFilter.value = payload
+  previousPage.value = sourcePage
+  if (window.innerWidth >= 1024) {
+    showCategoryModal.value = true
+  } else {
+    currentPage.value = 'category-history'
+  }
+}
 </script>
 
 <template>
@@ -86,6 +102,7 @@ useIdleTimer(() => {
       :expense="summary.expense"
       :nickname="nickname || ''"
       @refresh="fetchAll"
+      @show-category-history="handleShowCategoryHistory($event, 'dashboard')"
     />
 
     <AddTransactionPage
@@ -107,8 +124,8 @@ useIdleTimer(() => {
     <StatisticsPage
       v-else-if="currentPage === 'statistics'"
       :initial-type="selectedStatType"
+      @show-category-history="handleShowCategoryHistory($event, 'statistics')"
     />
-
 
     <SettingsPage
       v-else-if="currentPage === 'settings'"
@@ -117,5 +134,21 @@ useIdleTimer(() => {
     <BudgetPage
       v-else-if="currentPage === 'budget'"
     />
+
+    <CategoryHistoryPage
+      v-else-if="currentPage === 'category-history'"
+      :category="categoryFilter.category"
+      :month="categoryFilter.month"
+      :transactions="categoryFilter.transactions"
+      @back="currentPage = previousPage"
+    />
   </AppShell>
+
+  <CategoryHistoryModal
+    :visible="showCategoryModal"
+    :category="categoryFilter.category"
+    :month="categoryFilter.month"
+    :transactions="categoryFilter.transactions"
+    @close="showCategoryModal = false"
+  />
 </template>

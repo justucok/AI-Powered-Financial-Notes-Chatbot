@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { formatRupiah } from '../utils/formatters'
 import { useStatistics } from '../composables/useStatistics'
+import { useTransactions } from '../composables/useTransactions'
 
 import {
   Chart as ChartJS,
@@ -34,7 +35,12 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits({
+  'show-category-history': (payload) => payload && typeof payload === 'object',
+})
+
 const { loading, dailyTransactions, monthlySummaries, allCategories, fetchStatisticsData } = useStatistics()
+const { lastUpdate } = useTransactions()
 
 const type = ref(props.initialType)
 const period = ref('daily') // 'daily', 'weekly', 'monthly'
@@ -51,6 +57,12 @@ onMounted(() => {
 watch(selectedMonth, (newVal) => {
   fetchStatisticsData(newVal)
   chartKey.value++
+})
+
+watch(lastUpdate, () => {
+  if (selectedMonth.value) {
+    fetchStatisticsData(selectedMonth.value)
+  }
 })
 
 watch(() => props.initialType, (newVal) => {
@@ -244,6 +256,20 @@ const doughnutChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   cutout: '70%',
+  onClick: (event, elements) => {
+    if (elements.length > 0) {
+      const idx = elements[0].index
+      const cat = categoryData.value.data[idx]
+      if (cat) {
+        const categoryTransactions = dailyTransactions.value.filter(t => t.category === cat.name && t.type === type.value)
+        emit('show-category-history', {
+          category: cat.name,
+          month: selectedMonth.value,
+          transactions: categoryTransactions
+        })
+      }
+    }
+  },
   plugins: {
     legend: {
       display: false
@@ -387,7 +413,8 @@ function handleNextMonth() {
             <!-- Legend List -->
             <div class="flex-1 w-full space-y-3">
               <div v-for="item in categoryData.data" :key="item.name"
-                   class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                   class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                   @click="emit('show-category-history', { category: item.name, month: selectedMonth, transactions: dailyTransactions.filter(t => t.category === item.name && t.type === type) })">
                 <div class="flex items-center gap-3">
                   <div class="w-3 h-3 rounded-full shadow-sm" :style="{ backgroundColor: item.color }"></div>
                   <span class="text-lg">{{ item.icon }}</span>

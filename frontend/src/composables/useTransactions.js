@@ -35,6 +35,7 @@ export function useTransactions() {
   })
   const loading = ref(false)
   const selectedMonth = ref(getCurrentMonth())
+  const lastUpdate = ref(Date.now())
 
   async function fetchTransactions() {
     transactions.value = await getTransactions(selectedMonth.value)
@@ -65,12 +66,17 @@ export function useTransactions() {
     }
   }
 
+  function triggerUpdate() {
+    lastUpdate.value = Date.now()
+  }
+
   async function createTransaction(data) {
     loading.value = true
 
     try {
       const response = await createTransactionRequest(data)
       await fetchAll()
+      triggerUpdate()
       return response
     } finally {
       loading.value = false
@@ -83,6 +89,7 @@ export function useTransactions() {
     try {
       const response = await deleteTransactionRequest(id)
       await fetchAll()
+      triggerUpdate()
       return response
     } finally {
       loading.value = false
@@ -95,6 +102,7 @@ export function useTransactions() {
     try {
       const response = await updateTransactionRequest(id, data)
       await fetchAll()
+      triggerUpdate()
       return response
     } finally {
       loading.value = false
@@ -118,5 +126,6 @@ export function useTransactions() {
     deleteTransaction,
     updateTransaction,
     setMonth,
+    lastUpdate
   }
 }

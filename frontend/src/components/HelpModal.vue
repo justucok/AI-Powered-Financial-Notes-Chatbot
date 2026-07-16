@@ -36,7 +36,7 @@ function handleClose() {
       <div class="w-full md:w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
         <div class="p-6 border-b border-slate-200 shrink-0">
           <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <span class="text-2xl">❓</span> Panduan
+            <span class="text-2xl">❓</span> Help
           </h2>
           <p class="text-xs text-slate-500 mt-1">Cara menggunakan aplikasi</p>
         </div>
