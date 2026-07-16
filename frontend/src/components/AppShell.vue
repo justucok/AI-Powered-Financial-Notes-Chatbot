@@ -97,6 +97,13 @@ const navItems = [
         >
           <span class="text-lg">📋</span> History
         </button>
+        <button
+          type="button"
+          :class="['flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold transition duration-200', currentPage === 'statistics' ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' : 'hover:bg-slate-800 hover:text-white']"
+          @click="emit('navigate', 'statistics')"
+        >
+          <span class="text-lg">📊</span> Statistik
+        </button>
       </nav>
 
       <div class="p-4 border-t border-slate-800">
@@ -112,7 +119,7 @@ const navItems = [
           class="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold text-sky-400 transition hover:bg-slate-800 hover:text-white mb-2"
           @click="showHelp = true"
         >
-          <span class="text-lg">❓</span> Panduan
+          <span class="text-lg">❓</span> Help
         </button>
         <button
           type="button"
@@ -155,17 +162,17 @@ const navItems = [
           </button>
           <button
             type="button"
+            class="w-full text-left px-4 py-2 text-sm text-sky-600 hover:bg-sky-50 transition-colors"
+            @click="showMobileProfile = false; showHelp = true"
+          >
+            Help
+          </button>
+          <button
+            type="button"
             class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
             @click="showMobileProfile = false; emit('logout')"
           >
             Logout
-          </button>
-          <button
-            type="button"
-            class="w-full text-left px-4 py-2 text-sm text-sky-600 hover:bg-sky-50 transition-colors"
-            @click="showMobileProfile = false; showHelp = true"
-          >
-            Panduan
           </button>
         </div>
       </div>
