@@ -42,6 +42,7 @@ const period = ref('daily') // 'daily', 'weekly', 'monthly'
 const today = new Date()
 const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 const selectedMonth = ref(currentMonthKey)
+const chartKey = ref(0)
 
 onMounted(() => {
   fetchStatisticsData(selectedMonth.value)
@@ -49,6 +50,7 @@ onMounted(() => {
 
 watch(selectedMonth, (newVal) => {
   fetchStatisticsData(newVal)
+  chartKey.value++
 })
 
 watch(() => props.initialType, (newVal) => {
@@ -304,12 +306,12 @@ function handleNextMonth() {
         
         <!-- Toggle Income/Expense -->
         <div class="flex p-1 bg-slate-100 rounded-xl">
-          <button @click="type = 'expense'"
+          <button @click="type = 'expense'; chartKey++"
                   :class="type === 'expense' ? 'bg-white shadow-sm text-rose-600 ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-700'"
                   class="flex-1 py-2 text-sm font-bold rounded-lg transition-all">
             💸 Pengeluaran
           </button>
-          <button @click="type = 'income'"
+          <button @click="type = 'income'; chartKey++"
                   :class="type === 'income' ? 'bg-white shadow-sm text-emerald-600 ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-700'"
                   class="flex-1 py-2 text-sm font-bold rounded-lg transition-all">
             📈 Pemasukan
@@ -341,7 +343,7 @@ function handleNextMonth() {
             <span class="animate-spin h-8 w-8 border-4 border-sky-600 border-t-transparent rounded-full"></span>
           </div>
           <div v-else class="w-full h-64 sm:h-80">
-            <Bar :data="barChartData" :options="barChartOptions" />
+            <Bar :key="'bar-' + chartKey + '-' + type" :data="barChartData" :options="barChartOptions" />
           </div>
           
           <div class="mt-4 flex justify-between text-sm px-2">
@@ -365,7 +367,7 @@ function handleNextMonth() {
             
             <!-- Chart.js Doughnut -->
             <div class="w-56 h-56 relative flex-shrink-0">
-              <Doughnut :data="doughnutChartData" :options="doughnutChartOptions" />
+              <Doughnut :key="'pie-' + chartKey + '-' + type" :data="doughnutChartData" :options="doughnutChartOptions" />
               <!-- Center Text -->
               <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <p class="text-[10px] text-slate-500 font-bold uppercase">Total</p>

@@ -24,7 +24,11 @@ export function useStatistics() {
     return keys
   }
 
+  let currentController = null
+
   async function fetchStatisticsData(currentMonthKey) {
+    if (currentController) currentController.abort()
+    currentController = new AbortController()
     loading.value = true
     try {
       // Fetch concurrent data
@@ -43,6 +47,7 @@ export function useStatistics() {
       allCategories.value = categoriesRes
       monthlySummaries.value = summariesRes
     } catch (err) {
+      if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') return
       console.error("Failed to fetch statistics data:", err)
     } finally {
       loading.value = false
