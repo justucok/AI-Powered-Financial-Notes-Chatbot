@@ -1,6 +1,16 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import ChatBubble from './ChatBubble.vue'
+import HelpModal from './HelpModal.vue'
+
+const showHelp = ref(false)
+
+onMounted(() => {
+  if (!localStorage.getItem('help_shown')) {
+    showHelp.value = true
+    localStorage.setItem('help_shown', 'true')
+  }
+})
 
 defineProps({
   currentPage: {
@@ -99,6 +109,13 @@ const navItems = [
         </button>
         <button
           type="button"
+          class="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold text-sky-400 transition hover:bg-slate-800 hover:text-white mb-2"
+          @click="showHelp = true"
+        >
+          <span class="text-lg">❓</span> Panduan
+        </button>
+        <button
+          type="button"
           class="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold text-rose-400 transition hover:bg-rose-500/10 hover:text-rose-300"
           @click="emit('logout')"
         >
@@ -142,6 +159,13 @@ const navItems = [
             @click="showMobileProfile = false; emit('logout')"
           >
             Logout
+          </button>
+          <button
+            type="button"
+            class="w-full text-left px-4 py-2 text-sm text-sky-600 hover:bg-sky-50 transition-colors"
+            @click="showMobileProfile = false; showHelp = true"
+          >
+            Panduan
           </button>
         </div>
       </div>
@@ -208,5 +232,7 @@ const navItems = [
 
     <!-- Global Chat Bubble (Desktop Only) -->
     <ChatBubble class="hidden lg:block" @transaction-added="emit('transaction-added')" />
+
+    <HelpModal :show="showHelp" @close="showHelp = false" />
   </div>
 </template>

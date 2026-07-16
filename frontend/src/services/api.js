@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
     // If the server returns 401, the token is expired or invalid — force logout
     if (error.response?.status === 401) {
       removeAuthData()
-      window.location.reload()
+      window.dispatchEvent(new CustomEvent('session-expired'))
     }
 
     return Promise.reject(error)

@@ -12,10 +12,12 @@ import HistoryPage from './views/HistoryPage.vue'
 import SettingsPage from './views/SettingsPage.vue'
 import StatisticsPage from './views/StatisticsPage.vue'
 import BudgetPage from './views/BudgetPage.vue'
+import { useIdleTimer } from './composables/useIdleTimer'
 
 const { isLoggedIn, fullName, nickname, logout } = useAuth()
 const currentPage = ref('dashboard')
 const selectedStatType = ref('expense')
+const sessionExpiredMsg = ref('')
 const {
   transactions,
   summary,
@@ -45,11 +47,25 @@ function handleLogout() {
   logout()
   currentPage.value = 'dashboard'
 }
+
+onMounted(() => {
+  window.addEventListener('session-expired', () => {
+    handleLogout()
+    sessionExpiredMsg.value = 'Sesi Anda telah berakhir. Silakan login kembali.'
+  })
+})
+
+useIdleTimer(() => {
+  if (isLoggedIn.value) {
+    handleLogout()
+    sessionExpiredMsg.value = 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 30 menit.'
+  }
+})
 </script>
 
 <template>
   <!-- Auth gate: show login page when not authenticated -->
-  <LoginPage v-if="!isLoggedIn" @logged-in="handleLoggedIn" />
+  <LoginPage v-if="!isLoggedIn" :expired-message="sessionExpiredMsg" @logged-in="handleLoggedIn" />
 
   <!-- Main layout shell: shown when authenticated -->
   <AppShell
