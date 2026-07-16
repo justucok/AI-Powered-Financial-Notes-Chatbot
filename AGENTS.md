@@ -718,3 +718,14 @@ Dan buatkan file backend/main.py final yang import semua router dan setup aplika
 - Gemini API Key bisa didapat di: https://aistudio.google.com/app/apikey
 - Model yang digunakan: `gemini-2.5-pro` (untuk text dan vision)
 - SQLite file `db.sqlite3` akan ter-generate otomatis saat pertama run
+
+---
+
+## Last Work
+
+- **Tanggal**: 17 Juli 2026
+- **Branch**: `fix_category_and_settings_UI_17072026`
+- **Pekerjaan**:
+  - Memperbaiki sinkronisasi data kategori pada komponen Quick Add dengan mengubah sumber data (dari _hardcoded_ menjadi dinamis dari backend).
+  - Menambahkan _sorting_ otomatis untuk list Kategori berdasarkan tipe pemasukan/pengeluaran dan urutan abjad, dengan "Lainnya" diposisikan di baris akhir.
+  - Menyesuaikan UI di halaman Settings: form Tambah Sumber Uang Baru dan Tambah Kategori Baru dipindahkan posisinya agar berada tepat di atas list data masing-masing.

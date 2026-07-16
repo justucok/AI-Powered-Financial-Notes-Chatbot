@@ -12,6 +12,15 @@ const props = defineProps({
   }
 })
 
+import { useCategories } from '../composables/useCategories'
+
+const { categories: allCategories, fetchCategories } = useCategories()
+
+import { onMounted } from 'vue'
+onMounted(() => {
+  fetchCategories()
+})
+
 const emit = defineEmits({
   'transaction-added': (payload) => payload && typeof payload === 'object',
 })
@@ -33,39 +42,20 @@ const errors = ref({
   fundSourceId: '',
 })
 
-const expenseCategories = [
-  'Makanan',
-  'Transport',
-  'Belanja',
-  'Kesehatan',
-  'Hiburan',
-  'Tagihan',
-  'Pendidikan',
-  'Lainnya',
-]
-
-const incomeCategories = [
-  'Gaji',
-  'Freelance',
-  'Investasi',
-  'Bonus',
-  'Hadiah',
-  'Penjualan',
-  'Lainnya',
-]
-
-const categoryOptions = computed(() =>
-  type.value === 'income' ? incomeCategories : expenseCategories
-)
+const categoryOptions = computed(() => {
+  return allCategories.value.filter(c => c.type === type.value).map(c => ({
+    label: `${c.icon || '🏷️'} ${c.name}`,
+    value: c.name
+  }))
+})
 
 const categoryPlaceholder = computed(() =>
   type.value === 'income' ? 'Contoh: Gaji' : 'Contoh: Makanan'
 )
 
 watch(type, () => {
-  if (category.value && !categoryOptions.value.includes(category.value)) {
-    category.value = ''
-  }
+  category.value = ''
+  resetErrors()
 })
 
 watch(() => props.fundSources, (sources) => {
@@ -218,7 +208,9 @@ async function handleSubmit() {
           class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
         >
         <datalist id="quick-add-categories">
-          <option v-for="option in categoryOptions" :key="option" :value="option" />
+          <option v-for="cat in categoryOptions" :key="cat.value" :value="cat.value">
+            {{ cat.label }}
+          </option>
         </datalist>
         <p v-if="errors.category" class="text-xs text-rose-600">
           {{ errors.category }}
