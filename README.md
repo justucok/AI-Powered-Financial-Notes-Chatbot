@@ -179,6 +179,14 @@ Aplikasi ini memiliki berbagai fitur unggulan untuk membantu mencatat dan mengel
 
 ## Last Update (Terbaru)
 
+**Update 17 Juli 2026 (fix_workflow_rules_17072026)**
+- Menambahkan aturan workflow otomatis ke `AGENTS.md` terkait kewajiban memperbarui `README.md` dan `AGENTS.md` setiap ada penambahan fitur atau perbaikan *bug* sebelum melakukan *push* ke Git.
+
+**Update 17 Juli 2026 (fix_category_and_settings_UI_17072026)**
+- Memperbaiki sinkronisasi kategori dinamis pada formulir *Quick Add* (Tambah Cepat).
+- Menambahkan pengurutan kategori secara otomatis berdasarkan tipe (pengeluaran/pemasukan), lalu berdasarkan abjad, serta memposisikan kategori "Lainnya" selalu di urutan paling bawah.
+- Memindahkan form penambahan Sumber Uang Baru dan Kategori Baru ke bagian paling atas pada halaman *Settings* (Pengaturan).
+
 **Update 12 Juli 2026 (feature_2_12072026)**
 - Memperbaiki tata letak (layout) *Dashboard* pada versi *mobile* (jarak batas bawah dan ukuran kotak obrolan diperbaiki).
 - Mengimplementasikan fitur *Global Chat Bubble* khusus untuk versi *desktop* agar *AI Chat Assistant* dapat diakses secara mengambang dari mana saja.

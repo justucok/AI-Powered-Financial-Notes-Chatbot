@@ -18,9 +18,9 @@ class Settings(BaseSettings):
     secret_key: str = Field(
         validation_alias=AliasChoices("SECRET_KEY"),
     )
-    access_token_expire_days: int = Field(
-        default=7,
-        validation_alias=AliasChoices("ACCESS_TOKEN_EXPIRE_DAYS"),
+    access_token_expire_minutes: int = Field(
+        default=30,
+        validation_alias=AliasChoices("ACCESS_TOKEN_EXPIRE_MINUTES"),
     )
     gemini_api_key: str = Field(
         validation_alias=AliasChoices("GEMINI_API_KEY"),

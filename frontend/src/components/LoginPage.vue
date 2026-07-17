@@ -5,7 +5,12 @@ const emit = defineEmits({
   'logged-in': () => true,
 })
 
-defineProps({})
+defineProps({
+  expiredMessage: {
+    type: String,
+    default: ''
+  }
+})
 
 // Tab state
 const activeTab = ref('login')
@@ -134,6 +139,11 @@ async function handleSubmit() {
 
       <!-- Card -->
       <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
+        <div v-if="expiredMessage"
+             class="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-2">
+          ⏰ {{ expiredMessage }}
+        </div>
+
         <!-- Tab switcher (only show in login/register) -->
         <div v-if="activeTab === 'login' || activeTab === 'register'" class="mb-6 flex rounded-xl bg-slate-100 p-1">
           <button

@@ -263,7 +263,7 @@ function getFundSourceDisplay(id) {
       </div>
 
       <!-- Desktop Table View (hidden on Mobile) -->
-      <div v-if="filteredTransactions.length > 0" class="hidden md:block overflow-hidden rounded-2xl border border-slate-200">
+      <div v-if="filteredTransactions.length > 0" class="hidden md:block overflow-x-auto rounded-2xl border border-slate-200">
         <table class="min-w-full divide-y divide-slate-200">
           <thead class="bg-slate-50">
             <tr class="text-left text-xs font-bold uppercase tracking-wider text-slate-500">

@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
     // If the server returns 401, the token is expired or invalid — force logout
     if (error.response?.status === 401) {
       removeAuthData()
-      window.location.reload()
+      window.dispatchEvent(new CustomEvent('session-expired'))
     }
 
     return Promise.reject(error)
@@ -39,9 +39,10 @@ apiClient.interceptors.response.use(
 // Transaction API calls
 // ---------------------------------------------------------------------------
 
-export async function getTransactions(month) {
+export async function getTransactions(month, options = {}) {
   const response = await apiClient.get('/v1/transactions', {
     params: month ? { month } : undefined,
+    ...options
   })
   return response.data
 }
@@ -61,9 +62,10 @@ export async function deleteTransaction(id) {
   return response.data
 }
 
-export async function getSummary(month) {
+export async function getSummary(month, options = {}) {
   const response = await apiClient.get('/v1/summary', {
     params: month ? { month } : undefined,
+    ...options
   })
   return response.data
 }
@@ -133,8 +135,8 @@ export async function adjustFundSourceBalance(id, targetBalance) {
 }
 
 // --- Categories ---
-export async function getCategories() {
-  const response = await apiClient.get('/v1/categories')
+export async function getCategories(options = {}) {
+  const response = await apiClient.get('/v1/categories', options)
   return response.data
 }
 

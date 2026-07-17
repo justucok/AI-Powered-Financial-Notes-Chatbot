@@ -5,6 +5,7 @@ import ChatBox from '../components/ChatBox.vue'
 import { useBudget } from '../composables/useBudget'
 import { useStatistics } from '../composables/useStatistics'
 import { useFundSources } from '../composables/useFundSources'
+import { useTransactions } from '../composables/useTransactions'
 import { formatRupiah } from '../utils/formatters'
 
 import {
@@ -52,10 +53,12 @@ const props = defineProps({
 
 const emit = defineEmits({
   'refresh': () => true,
+  'show-category-history': (payload) => payload && typeof payload === 'object',
 })
 
 const { summary: budgetSummary, fetchBudgetSummary } = useBudget()
 const { loading: statsLoading, dailyTransactions, monthlySummaries, allCategories, fetchStatisticsData } = useStatistics()
+const { lastUpdate } = useTransactions()
 const { sources: fundSources, fetchSources } = useFundSources()
 
 async function handleTransactionAdded() {
@@ -84,7 +87,15 @@ const initialMonthKey = `${todayObj.getFullYear()}-${String(todayObj.getMonth() 
 const selectedStatMonth = ref(initialMonthKey)
 
 watch(selectedStatMonth, (newVal) => {
-  fetchStatisticsData(newVal)
+  if (newVal) {
+    fetchStatisticsData(newVal)
+  }
+})
+
+watch(lastUpdate, () => {
+  if (selectedStatMonth.value) {
+    fetchStatisticsData(selectedStatMonth.value)
+  }
 })
 
 const monthName = computed(() => {
@@ -137,7 +148,7 @@ const monthlyData = computed(() => {
     const d = new Date(s.month + '-01')
     return {
       label: d.toLocaleDateString('id-ID', { month: 'short' }),
-      value: type.value === 'expense' ? s.expense : s.income
+      value: type.value === 'expense' ? s.total_expense : s.total_income
     }
   })
 })
@@ -162,6 +173,10 @@ const barChartData = computed(() => {
     ]
   }
 })
+
+watch(activeData, (newVal) => {
+  console.log('DEBUG activeData:', JSON.stringify(newVal))
+}, { immediate: true })
 
 const barChartOptions = computed(() => ({
   responsive: true,
@@ -241,6 +256,20 @@ const doughnutChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   cutout: '70%',
+  onClick: (event, elements) => {
+    if (elements.length > 0) {
+      const idx = elements[0].index
+      const cat = categoryData.value.data[idx]
+      if (cat) {
+        const categoryTransactions = dailyTransactions.value.filter(t => t.category === cat.name && t.type === type.value)
+        emit('show-category-history', {
+          category: cat.name,
+          month: selectedStatMonth.value,
+          transactions: categoryTransactions
+        })
+      }
+    }
+  },
   plugins: {
     legend: { display: false },
     tooltip: {
@@ -401,7 +430,7 @@ function handleNextMonth() {
         <div v-if="statsLoading" class="h-64 flex justify-center items-center">
           <span class="animate-spin h-8 w-8 border-4 border-sky-600 border-t-transparent rounded-full"></span>
         </div>
-        <div v-else class="w-full h-64 sm:h-80">
+        <div v-else class="w-full h-64 sm:h-80 relative">
           <Bar :data="barChartData" :options="barChartOptions" />
         </div>
         
@@ -436,10 +465,10 @@ function handleNextMonth() {
             </div>
           </div>
 
-          <!-- Legend List -->
           <div class="flex-1 w-full space-y-3">
             <div v-for="item in categoryData.data" :key="item.name"
-                  class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                  class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                  @click="emit('show-category-history', { category: item.name, month: selectedStatMonth, transactions: dailyTransactions.filter(t => t.category === item.name && t.type === type) })">
               <div class="flex items-center gap-3">
                 <div class="w-3 h-3 rounded-full shadow-sm" :style="{ backgroundColor: item.color }"></div>
                 <span class="text-lg">{{ item.icon }}</span>
