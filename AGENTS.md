@@ -732,6 +732,13 @@ Dan buatkan file backend/main.py final yang import semua router dan setup aplika
 
 ## Last Work
 
+- **Tanggal**: 18 Juli 2026
+- **Branch**: `fix_workflow_rules_17072026`
+- **Pekerjaan**:
+  - Memperbaiki normalisasi path SQLite di `backend/database.py` agar `DATABASE_URL` relatif tetap diarahkan ke lokasi absolut yang benar ketika backend dijalankan dari root project atau dari folder `backend`.
+  - Menambahkan pembuatan folder parent database secara otomatis sebelum SQLAlchemy engine dibuat untuk mencegah error `sqlite3.OperationalError: unable to open database file`.
+  - Menambahkan link production Vercel ke `README.md` pada bagian Deployment ke Production.
+
 - **Tanggal**: 17 Juli 2026
 - **Branch**: `fix_workflow_rules_17072026`
 - **Pekerjaan**:
