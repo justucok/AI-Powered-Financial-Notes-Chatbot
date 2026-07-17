@@ -9,7 +9,15 @@ export function useCategories() {
   async function fetchCategories() {
     loading.value = true
     try {
-      categories.value = await getCategories()
+      const data = await getCategories()
+      categories.value = data.sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'expense' ? -1 : 1
+        const aIsLainnya = a.name.toLowerCase() === 'lainnya'
+        const bIsLainnya = b.name.toLowerCase() === 'lainnya'
+        if (aIsLainnya && !bIsLainnya) return 1
+        if (!aIsLainnya && bIsLainnya) return -1
+        return a.name.localeCompare(b.name)
+      })
       return categories.value
     } catch (error) {
       console.error('Failed to fetch categories:', error)

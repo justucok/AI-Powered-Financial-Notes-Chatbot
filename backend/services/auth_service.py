@@ -55,7 +55,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 def create_access_token(payload: dict[str, Any]) -> str:
     """Create a signed JWT access token with an expiry claim."""
 
-    expire = datetime.now(UTC) + timedelta(days=_settings.access_token_expire_days)
+    expire = datetime.now(UTC) + timedelta(minutes=_settings.access_token_expire_minutes)
     to_encode = {**payload, "exp": expire}
     return jwt.encode(to_encode, _settings.secret_key, algorithm=ALGORITHM)
 

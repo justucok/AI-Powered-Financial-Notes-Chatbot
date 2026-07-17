@@ -44,10 +44,13 @@ function handleTypeChange(tx) {
   }
 }
 
+const selectedIndexes = ref([])
+
 function initSelections() {
   editableTransactions.value = props.pendingTransactions.map(tx => ({
     ...tx
   }))
+  selectedIndexes.value = props.pendingTransactions.map(() => true)
 }
 
 watch(() => props.pendingTransactions, () => {
@@ -62,9 +65,16 @@ watch(() => props.show, (newShow) => {
   }
 })
 
+const selectedCount = computed(() => selectedIndexes.value.filter(Boolean).length)
+
+const selectedTransactions = computed(() =>
+  editableTransactions.value.filter((_, i) => selectedIndexes.value[i])
+)
+
 const canConfirm = computed(() => {
+  if (selectedCount.value === 0) return false
   const needsSource = props.fundSources.length > 0
-  return editableTransactions.value.every(tx => {
+  return selectedTransactions.value.every(tx => {
     const hasBasic = tx.type && tx.amount > 0 && tx.category && tx.date
     if (needsSource) {
       return hasBasic && tx.fund_source_id != null
@@ -74,7 +84,7 @@ const canConfirm = computed(() => {
 })
 
 function handleConfirm() {
-  emit('confirm', editableTransactions.value)
+  emit('confirm', selectedTransactions.value)
 }
 </script>
 
@@ -90,55 +100,73 @@ function handleConfirm() {
       <div class="p-6 overflow-y-auto flex-1 space-y-6">
         <div v-for="(tx, idx) in editableTransactions" :key="idx" class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4">
           
-          <div class="flex gap-4">
-            <div class="flex-1">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Jenis Transaksi</label>
-              <select v-model="tx.type" @change="handleTypeChange(tx)" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                <option value="expense">Pengeluaran</option>
-                <option value="income">Pemasukan</option>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">
+              Transaksi {{ idx + 1 }}
+            </span>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" v-model="selectedIndexes[idx]"
+                     class="h-4 w-4 rounded accent-blue-600">
+              <span class="text-xs font-medium" :class="selectedIndexes[idx] ? 'text-blue-600' : 'text-slate-400'">
+                {{ selectedIndexes[idx] ? 'Akan disimpan' : 'Dilewati' }}
+              </span>
+            </label>
+          </div>
+
+          <div :class="{ 'opacity-40 pointer-events-none': !selectedIndexes[idx] }" class="space-y-4">
+            <div class="flex gap-4">
+              <div class="flex-1">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Jenis Transaksi</label>
+                <select v-model="tx.type" @change="handleTypeChange(tx)" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                  <option value="expense">Pengeluaran</option>
+                  <option value="income">Pemasukan</option>
+                </select>
+              </div>
+              <div class="flex-1">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal</label>
+                <input type="date" v-model="tx.date" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Nominal (Rp)</label>
+              <input type="number" v-model="tx.amount" min="1" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Kategori</label>
+              <select v-model="tx.category" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="" disabled>Pilih kategori</option>
+                <option v-for="cat in filteredCategories(tx.type)" :key="cat.name" :value="cat.name">{{ cat.name }}</option>
               </select>
             </div>
-            <div class="flex-1">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal</label>
-              <input type="date" v-model="tx.date" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi</label>
+              <input type="text" v-model="tx.description" placeholder="Opsional" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
             </div>
-          </div>
-          
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Nominal (Rp)</label>
-            <input type="number" v-model="tx.amount" min="1" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-          </div>
 
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Kategori</label>
-            <select v-model="tx.category" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option value="" disabled>Pilih kategori</option>
-              <option v-for="cat in filteredCategories(tx.type)" :key="cat.name" :value="cat.name">{{ cat.name }}</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi</label>
-            <input type="text" v-model="tx.description" placeholder="Opsional" class="w-full text-sm rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-          </div>
-
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Sumber Uang</label>
-            <select v-model="tx.fund_source_id" 
-                    :disabled="fundSources.length === 0"
-                    class="w-full text-sm rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-              <option :value="undefined" disabled>-- Pilih Sumber Uang --</option>
-              <option v-if="fundSources.length === 0" disabled>Belum ada sumber uang terdaftar</option>
-              <option v-for="source in fundSources" :key="source.id" :value="source.id">
-                {{ source.icon || '💰' }} {{ source.name }}
-              </option>
-            </select>
+            <div>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Sumber Uang</label>
+              <select v-model="tx.fund_source_id" 
+                      :disabled="fundSources.length === 0"
+                      class="w-full text-sm rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <option :value="undefined" disabled>-- Pilih Sumber Uang --</option>
+                <option v-if="fundSources.length === 0" disabled>Belum ada sumber uang terdaftar</option>
+                <option v-for="source in fundSources" :key="source.id" :value="source.id">
+                  {{ source.icon || '💰' }} {{ source.name }}
+                </option>
+              </select>
+            </div>
           </div>
 
         </div>
       </div>
 
       <div class="p-6 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50 rounded-b-2xl shrink-0">
+        <p class="text-xs text-slate-500 mr-auto self-center">
+          {{ selectedCount }} / {{ editableTransactions.length }} transaksi dipilih
+        </p>
         <button type="button" @click="$emit('close')" :disabled="isLoading"
                 class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
           Batal

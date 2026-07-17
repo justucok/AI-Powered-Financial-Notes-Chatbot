@@ -165,14 +165,23 @@ Terapkan aturan ini di setiap baris kode:
 
 ---
 
-### 5. Git Version Control Rules
+### 5. Git Version Control & Documentation Rules
 
-Terapkan konvensi Git berikut ini pada setiap perubahan kode:
+Terapkan konvensi Git beserta dokumentasi berikut ini pada setiap perubahan kode:
 
 - **Penamaan Branch**: 
   - Untuk fitur baru, wajib menggunakan format `feature_{urutan-fitur}_{DDMMYYYY}` (contoh: `feature_1_12072026`).
   - Untuk perbaikan bug/error, wajib menggunakan format `fix_{perbaikan_tentang_apa}_{DDMMYYYY}` (contoh: `fix_missing_chat_decorator_12072026`).
-- **Pesan Commit**: Selalu gunakan Conventional Commits format dengan jelas (contoh: `feat: [deskripsi fitur]`, `fix: [deskripsi perbaikan]`, `refactor: [deskripsi refactor]`).
+- **Alur Kerja (Workflow) Pembaruan**:
+  - **Jika Membuat Fitur Baru**:
+    1. Update file `README.md`: Tambahkan deskripsi fitur ke bagian *Fitur Aplikasi* dan catatan ke bagian *Last Update*.
+    2. Update file `AGENTS.md`: Catat detail pekerjaan di bagian `## Last Work` (paling bawah file).
+    3. Buat branch baru dengan awalan `feature_` lalu commit & push.
+  - **Jika Melakukan Perbaikan (Bug Fix)**:
+    1. Update file `README.md`: Tambahkan catatan perbaikan ke bagian *Last Update*.
+    2. Update file `AGENTS.md`: Catat detail perbaikan di bagian `## Last Work` (paling bawah file).
+    3. Buat branch baru dengan awalan `fix_` lalu commit & push.
+- **Pesan Commit**: Selalu gunakan format *Conventional Commits* secara jelas (contoh: `feat: [deskripsi fitur]`, `fix: [deskripsi perbaikan]`, `refactor: [deskripsi refactor]`).
 
 ---
 
@@ -718,3 +727,19 @@ Dan buatkan file backend/main.py final yang import semua router dan setup aplika
 - Gemini API Key bisa didapat di: https://aistudio.google.com/app/apikey
 - Model yang digunakan: `gemini-2.5-pro` (untuk text dan vision)
 - SQLite file `db.sqlite3` akan ter-generate otomatis saat pertama run
+
+---
+
+## Last Work
+
+- **Tanggal**: 17 Juli 2026
+- **Branch**: `fix_workflow_rules_17072026`
+- **Pekerjaan**:
+  - Memperbarui pola (_pattern_) Standar Operasional Prosedur (SOP) pengerjaan di `AGENTS.md` bagian Git Version Control. Memastikan bahwa untuk setiap pengerjaan ke depan, update changelog selalu ditambahkan secara berurutan ke `README.md` dan `AGENTS.md` sebelum di-_push_.
+
+- **Tanggal**: 17 Juli 2026
+- **Branch**: `fix_category_and_settings_UI_17072026`
+- **Pekerjaan**:
+  - Memperbaiki sinkronisasi data kategori pada komponen Quick Add dengan mengubah sumber data (dari _hardcoded_ menjadi dinamis dari backend).
+  - Menambahkan _sorting_ otomatis untuk list Kategori berdasarkan tipe pemasukan/pengeluaran dan urutan abjad, dengan "Lainnya" diposisikan di baris akhir.
+  - Menyesuaikan UI di halaman Settings: form Tambah Sumber Uang Baru dan Tambah Kategori Baru dipindahkan posisinya agar berada tepat di atas list data masing-masing.

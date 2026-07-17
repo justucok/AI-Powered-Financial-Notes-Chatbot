@@ -43,6 +43,20 @@ const expenseCategories = computed(() => {
   return categories.value.filter(c => c.type === 'expense')
 })
 
+const sortedCategories = computed(() => {
+  if (!categories.value) return []
+  return [...categories.value].sort((a, b) => {
+    if (a.type !== b.type) {
+      return a.type === 'expense' ? -1 : 1
+    }
+    const aIsLainnya = a.name.toLowerCase() === 'lainnya'
+    const bIsLainnya = b.name.toLowerCase() === 'lainnya'
+    if (aIsLainnya && !bIsLainnya) return 1
+    if (!aIsLainnya && bIsLainnya) return -1
+    return a.name.localeCompare(b.name)
+  })
+})
+
 function getCategoryBudgetAmount(categoryName) {
   const cb = budgetSummary.value.category_budgets.find(item => item.category_name === categoryName)
   return cb ? cb.budget_amount : 0
@@ -400,6 +414,44 @@ async function handleAdjustBalance() {
           <!-- TAB: SUMBER UANG -->
           <div v-show="activeTab === 'sources'" class="space-y-8">
             
+            <!-- Add Source Form -->
+            <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+              <h4 class="font-bold text-blue-900 mb-4">Tambah Sumber Baru</h4>
+              <form @submit.prevent="handleAddSource" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+                    <input v-model="newSource.name" type="text" placeholder="Misal: Bank Mandiri" required
+                           class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipe</label>
+                    <select v-model="newSource.type"
+                            class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2">
+                      <option value="bank">Bank</option>
+                      <option value="ewallet">E-Wallet</option>
+                      <option value="cash">Uang Tunai</option>
+                      <option value="other">Lainnya</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ikon (Emoji)</label>
+                    <input v-model="newSource.icon" type="text" placeholder="🏦"
+                           class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Saldo Awal (Rp)</label>
+                    <input v-model.number="newSource.initial_balance" type="number" min="0" required
+                           class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2">
+                  </div>
+                </div>
+                <button type="submit" :disabled="sourceLoading"
+                        class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+                  + Tambah Sumber Uang
+                </button>
+              </form>
+            </div>
+
             <!-- List Sources -->
             <div>
               <h3 class="text-lg font-bold text-gray-900 mb-4">Sumber Uang Anda</h3>
@@ -491,80 +543,12 @@ async function handleAdjustBalance() {
               </div>
             </div>
 
-            <!-- Add Source Form -->
-            <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
-              <h4 class="font-bold text-blue-900 mb-4">Tambah Sumber Baru</h4>
-              <form @submit.prevent="handleAddSource" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
-                    <input v-model="newSource.name" type="text" placeholder="Misal: Bank Mandiri" required
-                           class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipe</label>
-                    <select v-model="newSource.type"
-                            class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2">
-                      <option value="bank">Bank</option>
-                      <option value="ewallet">E-Wallet</option>
-                      <option value="cash">Uang Tunai</option>
-                      <option value="other">Lainnya</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Ikon (Emoji)</label>
-                    <input v-model="newSource.icon" type="text" placeholder="🏦"
-                           class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Saldo Awal (Rp)</label>
-                    <input v-model.number="newSource.initial_balance" type="number" min="0" required
-                           class="w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2">
-                  </div>
-                </div>
-                <button type="submit" :disabled="sourceLoading"
-                        class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
-                  + Tambah Sumber Uang
-                </button>
-              </form>
-            </div>
+
           </div>
 
           <!-- TAB: KATEGORI -->
           <div v-show="activeTab === 'categories'" class="space-y-8">
             
-            <!-- List Categories -->
-            <div>
-              <h3 class="text-lg font-bold text-gray-900 mb-4">Kategori Transaksi</h3>
-              <div v-if="categoryLoading && !categories.length" class="flex justify-center p-4">
-                <span class="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full"></span>
-              </div>
-              <div v-else-if="categories.length === 0" class="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                <p class="text-gray-500">Belum ada kategori.</p>
-              </div>
-              <div v-else class="space-y-3">
-                <div v-for="category in categories" :key="category.id" 
-                     class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div class="flex items-center space-x-3">
-                    <span class="text-2xl">{{ category.icon || '🏷️' }}</span>
-                    <div>
-                      <p class="font-bold text-gray-900">{{ category.name }}</p>
-                      <p class="text-xs text-gray-500 capitalize">
-                        <span :class="category.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">
-                          {{ category.type === 'income' ? 'Pemasukan' : 'Pengeluaran' }}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  <button @click="deleteCategory(category.id)" 
-                          class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Hapus Kategori">
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            </div>
-
             <!-- Add Category Form -->
             <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100">
               <h4 class="font-bold text-blue-900 mb-4">Tambah Kategori Baru</h4>
@@ -595,6 +579,40 @@ async function handleAdjustBalance() {
                 </button>
               </form>
             </div>
+
+            <!-- List Categories -->
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 mb-4">Kategori Transaksi</h3>
+              <div v-if="categoryLoading && !categories.length" class="flex justify-center p-4">
+                <span class="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full"></span>
+              </div>
+              <div v-else-if="categories.length === 0" class="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                <p class="text-gray-500">Belum ada kategori.</p>
+              </div>
+              <div v-else class="space-y-3">
+                <div v-for="category in sortedCategories" :key="category.id" 
+                     class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div class="flex items-center space-x-3">
+                    <span class="text-2xl">{{ category.icon || '🏷️' }}</span>
+                    <div>
+                      <p class="font-bold text-gray-900">{{ category.name }}</p>
+                      <p class="text-xs text-gray-500 capitalize">
+                        <span :class="category.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">
+                          {{ category.type === 'income' ? 'Pemasukan' : 'Pengeluaran' }}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                  <button @click="deleteCategory(category.id)" 
+                          class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Hapus Kategori">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            </div>
+
+
           </div>
 
           <!-- TAB: ANGGARAN (BUDGET) -->
