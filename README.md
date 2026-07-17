@@ -153,6 +153,14 @@ Proyek ini telah dikonfigurasi agar siap di-deploy dengan arsitektur berikut:
 2. **Backend**: Render (Web Service gratis)
 3. **Database**: Supabase (PostgreSQL)
 
+### Link Production
+
+Aplikasi production dapat diakses melalui:
+
+```text
+https://ai-powered-financial-notes-chatbot-k6omdwoj0-justucoks-projects.vercel.app/
+```
+
 ### Persiapan Variabel Environment (Secrets)
 Pastikan Anda menambahkan Environment Variables ini di Dashboard Render dan Vercel. **Penting: Jangan pernah mengekspos API Keys atau Database URL di dalam kode sumber / repository.**
 - Render: Tambahkan `GEMINI_API_KEY`, `DATABASE_URL` (dari Supabase dengan format `postgresql+asyncpg://...`), dan `ALLOWED_ORIGINS` (URL dari Vercel).
@@ -178,6 +186,11 @@ Aplikasi ini memiliki berbagai fitur unggulan untuk membantu mencatat dan mengel
 9. **Desain Responsif**: Antarmuka yang bersih dan ramah pengguna di perangkat desktop maupun *mobile*.
 
 ## Last Update (Terbaru)
+
+**Update 18 Juli 2026 (fix_workflow_rules_17072026)**
+- Memperbaiki normalisasi path SQLite pada `backend/database.py` agar database tetap dapat dibuka saat backend dijalankan dari folder root project maupun folder `backend`.
+- Menambahkan pembuatan parent directory database secara otomatis sebelum SQLAlchemy engine dibuat untuk mencegah error `sqlite3.OperationalError: unable to open database file`.
+- Menambahkan link production Vercel ke dokumentasi deployment.
 
 **Update 17 Juli 2026 (fix_workflow_rules_17072026)**
 - Menambahkan aturan workflow otomatis ke `AGENTS.md` terkait kewajiban memperbarui `README.md` dan `AGENTS.md` setiap ada penambahan fitur atau perbaikan *bug* sebelum melakukan *push* ke Git.
