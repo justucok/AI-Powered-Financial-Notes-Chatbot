@@ -126,6 +126,7 @@ export function useTransactions() {
     deleteTransaction,
     updateTransaction,
     setMonth,
-    lastUpdate
+    lastUpdate,
+    triggerUpdate,
   }
 }

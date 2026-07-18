@@ -733,6 +733,12 @@ Dan buatkan file backend/main.py final yang import semua router dan setup aplika
 ## Last Work
 
 - **Tanggal**: 19 Juli 2026
+- **Branch**: `fix_external_statistics_refresh_19072026`
+- **Pekerjaan**:
+  - Memperbaiki refresh statistik untuk transaksi dari Global Chat Bubble dan event eksternal dengan membuat handler `handleDataRefresh()` di `App.vue`.
+  - Mengekspos `triggerUpdate()` dari `frontend/src/composables/useTransactions.js` agar semua perubahan transaksi dapat memicu pembaruan chart tren dan histori kategori.
+
+- **Tanggal**: 19 Juli 2026
 - **Branch**: `fix_statistics_category_history_19072026`
 - **Pekerjaan**:
   - Memperbaiki sinkronisasi refresh Statistik dengan meneruskan `lastUpdate` dari `App.vue` ke `DashboardPage.vue` dan `StatisticsPage.vue`.

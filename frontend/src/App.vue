@@ -31,6 +31,7 @@ const {
   updateTransaction,
   setMonth,
   lastUpdate,
+  triggerUpdate,
 } = useTransactions()
 
 onMounted(() => {
@@ -44,6 +45,11 @@ function handleLoggedIn() {
   fullName.value = getFullName()
   nickname.value = getNickname()
   fetchAll()
+}
+
+async function handleDataRefresh() {
+  await fetchAll()
+  triggerUpdate()
 }
 
 function handleLogout() {
@@ -93,7 +99,7 @@ function handleShowCategoryHistory(payload, sourcePage) {
     :balance="summary.balance"
     @navigate="currentPage = $event"
     @logout="handleLogout"
-    @transaction-added="fetchAll"
+    @transaction-added="handleDataRefresh"
   >
     <!-- View Switcher -->
     <DashboardPage
@@ -103,14 +109,14 @@ function handleShowCategoryHistory(payload, sourcePage) {
       :expense="summary.expense"
       :nickname="nickname || ''"
       :refresh-key="lastUpdate"
-      @refresh="fetchAll"
+      @refresh="handleDataRefresh"
       @show-category-history="handleShowCategoryHistory($event, 'dashboard')"
     />
 
     <AddTransactionPage
       v-else-if="currentPage === 'add'"
       :create-transaction="createTransaction"
-      @transaction-added="fetchAll"
+      @transaction-added="handleDataRefresh"
     />
 
     <HistoryPage
