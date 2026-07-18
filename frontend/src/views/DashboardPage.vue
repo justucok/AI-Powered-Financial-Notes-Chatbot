@@ -5,7 +5,6 @@ import ChatBox from '../components/ChatBox.vue'
 import { useBudget } from '../composables/useBudget'
 import { useStatistics } from '../composables/useStatistics'
 import { useFundSources } from '../composables/useFundSources'
-import { useTransactions } from '../composables/useTransactions'
 import { formatRupiah } from '../utils/formatters'
 
 import {
@@ -49,6 +48,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  refreshKey: {
+    type: Number,
+    default: 0,
+  },
 })
 
 const emit = defineEmits({
@@ -58,8 +61,8 @@ const emit = defineEmits({
 
 const { summary: budgetSummary, fetchBudgetSummary } = useBudget()
 const { loading: statsLoading, dailyTransactions, monthlySummaries, allCategories, fetchStatisticsData } = useStatistics()
-const { lastUpdate } = useTransactions()
 const { sources: fundSources, fetchSources } = useFundSources()
+const chartKey = ref(0)
 
 async function handleTransactionAdded() {
   await fetchSources()
@@ -67,6 +70,8 @@ async function handleTransactionAdded() {
   const today = new Date()
   const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
   await fetchBudgetSummary(currentMonthKey)
+  await fetchStatisticsData(selectedStatMonth.value)
+  chartKey.value++
 }
 
 // Global/Dashboard init
@@ -89,13 +94,19 @@ const selectedStatMonth = ref(initialMonthKey)
 watch(selectedStatMonth, (newVal) => {
   if (newVal) {
     fetchStatisticsData(newVal)
+    chartKey.value++
   }
 })
 
-watch(lastUpdate, () => {
+watch(() => props.refreshKey, () => {
   if (selectedStatMonth.value) {
     fetchStatisticsData(selectedStatMonth.value)
+    chartKey.value++
   }
+})
+
+watch([type, period], () => {
+  chartKey.value++
 })
 
 const monthName = computed(() => {
@@ -173,10 +184,6 @@ const barChartData = computed(() => {
     ]
   }
 })
-
-watch(activeData, (newVal) => {
-  console.log('DEBUG activeData:', JSON.stringify(newVal))
-}, { immediate: true })
 
 const barChartOptions = computed(() => ({
   responsive: true,
@@ -261,12 +268,7 @@ const doughnutChartOptions = computed(() => ({
       const idx = elements[0].index
       const cat = categoryData.value.data[idx]
       if (cat) {
-        const categoryTransactions = dailyTransactions.value.filter(t => t.category === cat.name && t.type === type.value)
-        emit('show-category-history', {
-          category: cat.name,
-          month: selectedStatMonth.value,
-          transactions: categoryTransactions
-        })
+        showCategoryHistory(cat.name)
       }
     }
   },
@@ -286,6 +288,15 @@ const doughnutChartOptions = computed(() => ({
 }))
 
 const maxActiveValue = computed(() => Math.max(...activeData.value.map(d => d.value), 0))
+
+function showCategoryHistory(categoryName) {
+  const categoryTransactions = dailyTransactions.value.filter(t => t.category === categoryName && t.type === type.value)
+  emit('show-category-history', {
+    category: categoryName,
+    month: selectedStatMonth.value,
+    transactions: categoryTransactions,
+  })
+}
 
 function handlePrevMonth() {
   const [y, m] = selectedStatMonth.value.split('-')
@@ -431,7 +442,7 @@ function handleNextMonth() {
           <span class="animate-spin h-8 w-8 border-4 border-sky-600 border-t-transparent rounded-full"></span>
         </div>
         <div v-else class="w-full h-64 sm:h-80 relative">
-          <Bar :data="barChartData" :options="barChartOptions" />
+          <Bar :key="'dashboard-bar-' + chartKey + '-' + type + '-' + period" :data="barChartData" :options="barChartOptions" />
         </div>
         
         <div class="mt-4 flex justify-between text-sm px-2">
@@ -455,7 +466,7 @@ function handleNextMonth() {
           
           <!-- Chart.js Doughnut -->
           <div class="w-56 h-56 relative flex-shrink-0">
-            <Doughnut :data="doughnutChartData" :options="doughnutChartOptions" />
+            <Doughnut :key="'dashboard-pie-' + chartKey + '-' + type" :data="doughnutChartData" :options="doughnutChartOptions" />
             <!-- Center Text -->
             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <p class="text-[10px] text-slate-500 font-bold uppercase">Total</p>
@@ -468,7 +479,7 @@ function handleNextMonth() {
           <div class="flex-1 w-full space-y-3">
             <div v-for="item in categoryData.data" :key="item.name"
                   class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
-                  @click="emit('show-category-history', { category: item.name, month: selectedStatMonth, transactions: dailyTransactions.filter(t => t.category === item.name && t.type === type) })">
+                  @click="showCategoryHistory(item.name)">
               <div class="flex items-center gap-3">
                 <div class="w-3 h-3 rounded-full shadow-sm" :style="{ backgroundColor: item.color }"></div>
                 <span class="text-lg">{{ item.icon }}</span>
