@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { formatRupiah } from '../utils/formatters'
 import { useStatistics } from '../composables/useStatistics'
-import { useTransactions } from '../composables/useTransactions'
 
 import {
   Chart as ChartJS,
@@ -32,6 +31,10 @@ const props = defineProps({
   initialType: {
     type: String,
     default: 'expense' // 'expense' or 'income'
+  },
+  refreshKey: {
+    type: Number,
+    default: 0,
   }
 })
 
@@ -40,7 +43,6 @@ const emit = defineEmits({
 })
 
 const { loading, dailyTransactions, monthlySummaries, allCategories, fetchStatisticsData } = useStatistics()
-const { lastUpdate } = useTransactions()
 
 const type = ref(props.initialType)
 const period = ref('daily') // 'daily', 'weekly', 'monthly'
@@ -59,9 +61,10 @@ watch(selectedMonth, (newVal) => {
   chartKey.value++
 })
 
-watch(lastUpdate, () => {
+watch(() => props.refreshKey, () => {
   if (selectedMonth.value) {
     fetchStatisticsData(selectedMonth.value)
+    chartKey.value++
   }
 })
 
@@ -124,8 +127,7 @@ const weeklyData = computed(() => {
 
 // 3. Monthly Data (Last 6 Months relative to selected month)
 const monthlyData = computed(() => {
-  const reversed = [...monthlySummaries.value].reverse()
-  return reversed.map(s => {
+  return monthlySummaries.value.map(s => {
     const d = new Date(s.month + '-01')
     return {
       label: d.toLocaleDateString('id-ID', { month: 'short' }),
@@ -261,12 +263,7 @@ const doughnutChartOptions = computed(() => ({
       const idx = elements[0].index
       const cat = categoryData.value.data[idx]
       if (cat) {
-        const categoryTransactions = dailyTransactions.value.filter(t => t.category === cat.name && t.type === type.value)
-        emit('show-category-history', {
-          category: cat.name,
-          month: selectedMonth.value,
-          transactions: categoryTransactions
-        })
+        showCategoryHistory(cat.name)
       }
     }
   },
@@ -292,6 +289,15 @@ const doughnutChartOptions = computed(() => ({
 }))
 
 const maxActiveValue = computed(() => Math.max(...activeData.value.map(d => d.value), 0))
+
+function showCategoryHistory(categoryName) {
+  const categoryTransactions = dailyTransactions.value.filter(t => t.category === categoryName && t.type === type.value)
+  emit('show-category-history', {
+    category: categoryName,
+    month: selectedMonth.value,
+    transactions: categoryTransactions,
+  })
+}
 
 function handlePrevMonth() {
   const [y, m] = selectedMonth.value.split('-')
@@ -414,7 +420,7 @@ function handleNextMonth() {
             <div class="flex-1 w-full space-y-3">
               <div v-for="item in categoryData.data" :key="item.name"
                    class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
-                   @click="emit('show-category-history', { category: item.name, month: selectedMonth, transactions: dailyTransactions.filter(t => t.category === item.name && t.type === type) })">
+                   @click="showCategoryHistory(item.name)">
                 <div class="flex items-center gap-3">
                   <div class="w-3 h-3 rounded-full shadow-sm" :style="{ backgroundColor: item.color }"></div>
                   <span class="text-lg">{{ item.icon }}</span>

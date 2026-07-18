@@ -187,6 +187,12 @@ Aplikasi ini memiliki berbagai fitur unggulan untuk membantu mencatat dan mengel
 
 ## Last Update (Terbaru)
 
+**Update 19 Juli 2026 (fix_statistics_category_history_19072026)**
+- Memperbaiki sinkronisasi data Statistik agar chart tren bulanan dan histori kategori ikut ter-refresh setelah transaksi ditambahkan, diedit, atau dihapus.
+- Memperbaiki urutan data chart tren bulanan agar tampil kronologis dari bulan terlama ke terbaru.
+- Memperkuat re-render Bar Chart dan Pie Chart saat filter tipe, periode, bulan, atau data transaksi berubah.
+- Memperbaiki race condition loading pada pengambilan data statistik agar request lama yang dibatalkan tidak mengganggu request terbaru.
+
 **Update 18 Juli 2026 (fix_workflow_rules_17072026)**
 - Memperbaiki normalisasi path SQLite pada `backend/database.py` agar database tetap dapat dibuka saat backend dijalankan dari folder root project maupun folder `backend`.
 - Menambahkan pembuatan parent directory database secara otomatis sebelum SQLAlchemy engine dibuat untuk mencegah error `sqlite3.OperationalError: unable to open database file`.

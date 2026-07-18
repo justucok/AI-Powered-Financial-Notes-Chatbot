@@ -32,6 +32,7 @@ export function useStatistics() {
       abortController.abort()
     }
     abortController = new AbortController()
+    const currentController = abortController
 
     loading.value = true
     try {
@@ -58,7 +59,7 @@ export function useStatistics() {
       error.value = err.message || 'Gagal memuat data statistik'
       console.error("Failed to fetch statistics data:", err)
     } finally {
-      if (!abortController || !abortController.signal.aborted) {
+      if (abortController === currentController && !currentController.signal.aborted) {
         loading.value = false
       }
     }

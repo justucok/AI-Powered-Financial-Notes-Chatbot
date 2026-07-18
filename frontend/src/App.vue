@@ -30,6 +30,7 @@ const {
   deleteTransaction,
   updateTransaction,
   setMonth,
+  lastUpdate,
 } = useTransactions()
 
 onMounted(() => {
@@ -101,6 +102,7 @@ function handleShowCategoryHistory(payload, sourcePage) {
       :income="summary.income"
       :expense="summary.expense"
       :nickname="nickname || ''"
+      :refresh-key="lastUpdate"
       @refresh="fetchAll"
       @show-category-history="handleShowCategoryHistory($event, 'dashboard')"
     />
@@ -124,6 +126,7 @@ function handleShowCategoryHistory(payload, sourcePage) {
     <StatisticsPage
       v-else-if="currentPage === 'statistics'"
       :initial-type="selectedStatType"
+      :refresh-key="lastUpdate"
       @show-category-history="handleShowCategoryHistory($event, 'statistics')"
     />
 

@@ -732,6 +732,14 @@ Dan buatkan file backend/main.py final yang import semua router dan setup aplika
 
 ## Last Work
 
+- **Tanggal**: 19 Juli 2026
+- **Branch**: `fix_statistics_category_history_19072026`
+- **Pekerjaan**:
+  - Memperbaiki sinkronisasi refresh Statistik dengan meneruskan `lastUpdate` dari `App.vue` ke `DashboardPage.vue` dan `StatisticsPage.vue`.
+  - Memperbaiki chart tren bulanan agar urutan data tampil kronologis dan chart dipaksa re-render saat filter atau data berubah.
+  - Menyatukan handler histori kategori pada Pie Chart dan daftar kategori agar modal desktop maupun halaman mobile menerima payload transaksi yang konsisten.
+  - Memperbaiki race condition loading di `frontend/src/composables/useStatistics.js` saat request statistik lama dibatalkan.
+
 - **Tanggal**: 18 Juli 2026
 - **Branch**: `fix_workflow_rules_17072026`
 - **Pekerjaan**:
