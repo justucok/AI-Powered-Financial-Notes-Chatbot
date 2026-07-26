@@ -189,6 +189,7 @@ Aplikasi ini memiliki berbagai fitur unggulan untuk membantu mencatat dan mengel
 
 **Update 19 Juli 2026 (fix_optional_pdf_password_19072026)**
 - Memperbaiki upload PDF e-statement agar password bersifat opsional dan PDF tanpa password tetap dapat diproses.
+- Menambahkan checkbox "PDF memerlukan password" agar field password hanya aktif saat diperlukan.
 - Menambahkan pesan error khusus jika PDF ternyata terkunci tetapi password belum diisi atau salah.
 
 **Update 19 Juli 2026 (fix_external_statistics_refresh_19072026)**

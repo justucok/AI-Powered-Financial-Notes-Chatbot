@@ -21,6 +21,7 @@ const emit = defineEmits(['close', 'confirm'])
 const password = ref('')
 const passwordInput = ref(null)
 const showPassword = ref(false)
+const hasPassword = ref(false)
 
 watch(
   () => props.show,
@@ -28,17 +29,25 @@ watch(
     if (newVal) {
       password.value = ''
       showPassword.value = false
-      nextTick(() => {
-        if (passwordInput.value) {
-          passwordInput.value.focus()
-        }
-      })
+      hasPassword.value = false
     }
   }
 )
 
+watch(hasPassword, (enabled) => {
+  if (!enabled) {
+    password.value = ''
+    showPassword.value = false
+    return
+  }
+
+  nextTick(() => {
+    passwordInput.value?.focus()
+  })
+})
+
 function handleSubmit() {
-  emit('confirm', password.value.trim())
+  emit('confirm', hasPassword.value ? password.value.trim() : '')
 }
 
 function handleClose() {
@@ -60,7 +69,7 @@ function handleClose() {
           <div class="mb-5">
             <h3 class="text-xl font-bold text-slate-900">📄 Upload E-Statement</h3>
             <p class="mt-1 text-sm text-slate-500">
-              Masukkan password jika PDF e-statement Anda terkunci. Kosongkan jika tidak memakai password.
+              Centang opsi password hanya jika PDF e-statement Anda terkunci.
             </p>
           </div>
           
@@ -76,19 +85,30 @@ function handleClose() {
 
           <form @submit.prevent="handleSubmit">
             <div class="mb-6">
-              <label class="mb-2 block text-sm font-medium text-slate-700">Password PDF (opsional)</label>
+              <label class="mb-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
+                <input
+                  v-model="hasPassword"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  :disabled="isLoading"
+                >
+                PDF memerlukan password
+              </label>
+
+              <label class="mb-2 block text-sm font-medium text-slate-700">Password PDF</label>
               <div class="relative">
                 <input
                   ref="passwordInput"
                   :type="showPassword ? 'text' : 'password'"
                   v-model="password"
-                  placeholder="Kosongkan jika PDF tidak terkunci"
+                  placeholder="Masukkan password PDF"
                   class="w-full rounded-xl border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-slate-900 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-1 focus:ring-sky-500"
-                  :disabled="isLoading"
+                  :disabled="isLoading || !hasPassword"
                 >
                 <button
                   type="button"
                   class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  :disabled="isLoading || !hasPassword"
                   @click="showPassword = !showPassword"
                 >
                   <span v-if="showPassword">🙈</span>
@@ -109,7 +129,7 @@ function handleClose() {
               <button
                 type="submit"
                 class="flex-1 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                :disabled="isLoading"
+                :disabled="isLoading || (hasPassword && !password.trim())"
               >
                 <span v-if="isLoading" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                 {{ isLoading ? 'Mengekstrak...' : 'Proses Sekarang' }}

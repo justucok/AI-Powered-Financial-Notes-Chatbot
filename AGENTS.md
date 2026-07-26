@@ -736,6 +736,7 @@ Dan buatkan file backend/main.py final yang import semua router dan setup aplika
 - **Branch**: `fix_optional_pdf_password_19072026`
 - **Pekerjaan**:
   - Memperbaiki modal upload PDF e-statement agar password PDF bersifat opsional dan pengguna dapat melanjutkan dengan password kosong.
+  - Menambahkan checkbox "PDF memerlukan password" agar field password hanya aktif saat pengguna membutuhkannya.
   - Menghapus validasi backend yang mewajibkan password pada endpoint `/chat/pdf`.
   - Menyesuaikan `backend/services/pdf_service.py` agar PDF tanpa password dibuka langsung, sedangkan PDF terkunci tetap meminta password valid.
 
