@@ -85,18 +85,12 @@ async def post_chat_pdf(
     current_user: TokenPayload = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> JSONResponse:
-    """Proses e-statement PDF berpassword dan ekstrak transaksi."""
+    """Proses e-statement PDF dan ekstrak transaksi."""
     if not file.content_type or file.content_type != "application/pdf":
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="File harus berformat PDF.",
         )
-    if not password.strip():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Password PDF wajib diisi.",
-        )
-
     import json
     try:
         fund_sources_list = json.loads(fund_sources)
