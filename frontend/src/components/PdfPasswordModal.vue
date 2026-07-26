@@ -38,8 +38,7 @@ watch(
 )
 
 function handleSubmit() {
-  if (!password.value.trim()) return
-  emit('confirm', password.value)
+  emit('confirm', password.value.trim())
 }
 
 function handleClose() {
@@ -61,7 +60,7 @@ function handleClose() {
           <div class="mb-5">
             <h3 class="text-xl font-bold text-slate-900">📄 Upload E-Statement</h3>
             <p class="mt-1 text-sm text-slate-500">
-              Masukkan password untuk mengekstrak transaksi dari e-statement Anda.
+              Masukkan password jika PDF e-statement Anda terkunci. Kosongkan jika tidak memakai password.
             </p>
           </div>
           
@@ -77,14 +76,13 @@ function handleClose() {
 
           <form @submit.prevent="handleSubmit">
             <div class="mb-6">
-              <label class="mb-2 block text-sm font-medium text-slate-700">Password PDF</label>
+              <label class="mb-2 block text-sm font-medium text-slate-700">Password PDF (opsional)</label>
               <div class="relative">
                 <input
                   ref="passwordInput"
                   :type="showPassword ? 'text' : 'password'"
                   v-model="password"
-                  required
-                  placeholder="Biasanya 6 digit akhir no. rekening"
+                  placeholder="Kosongkan jika PDF tidak terkunci"
                   class="w-full rounded-xl border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-slate-900 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-1 focus:ring-sky-500"
                   :disabled="isLoading"
                 >
@@ -111,7 +109,7 @@ function handleClose() {
               <button
                 type="submit"
                 class="flex-1 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                :disabled="!password.trim() || isLoading"
+                :disabled="isLoading"
               >
                 <span v-if="isLoading" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                 {{ isLoading ? 'Mengekstrak...' : 'Proses Sekarang' }}

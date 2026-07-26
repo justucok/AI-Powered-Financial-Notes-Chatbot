@@ -187,6 +187,10 @@ Aplikasi ini memiliki berbagai fitur unggulan untuk membantu mencatat dan mengel
 
 ## Last Update (Terbaru)
 
+**Update 19 Juli 2026 (fix_optional_pdf_password_19072026)**
+- Memperbaiki upload PDF e-statement agar password bersifat opsional dan PDF tanpa password tetap dapat diproses.
+- Menambahkan pesan error khusus jika PDF ternyata terkunci tetapi password belum diisi atau salah.
+
 **Update 19 Juli 2026 (fix_external_statistics_refresh_19072026)**
 - Memperbaiki refresh statistik untuk transaksi yang ditambahkan dari Global Chat Bubble dan event eksternal lain dengan menyatukan handler refresh di `App.vue`.
 - Mengekspos `triggerUpdate()` dari `useTransactions()` agar perubahan transaksi di luar form utama tetap memicu pembaruan chart tren dan histori kategori.
